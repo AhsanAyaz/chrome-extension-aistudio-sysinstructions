@@ -102,45 +102,45 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | TBD | Pending |
-| FND-02 | TBD | Pending |
-| FND-03 | TBD | Pending |
-| FND-04 | TBD | Pending |
-| FND-05 | TBD | Pending |
-| FND-06 | TBD | Pending |
-| PUSH-01 | TBD | Pending |
-| PUSH-02 | TBD | Pending |
-| PUSH-03 | TBD | Pending |
-| PUSH-04 | TBD | Pending |
-| PUSH-05 | TBD | Pending |
-| PUSH-06 | TBD | Pending |
-| PUSH-07 | TBD | Pending |
-| PULL-01 | TBD | Pending |
-| PULL-02 | TBD | Pending |
-| PULL-03 | TBD | Pending |
-| PULL-04 | TBD | Pending |
-| PULL-05 | TBD | Pending |
-| BOOT-01 | TBD | Pending |
-| BOOT-02 | TBD | Pending |
-| BOOT-03 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| UI-05 | TBD | Pending |
-| UI-06 | TBD | Pending |
-| EXPORT-01 | TBD | Pending |
-| EXPORT-02 | TBD | Pending |
-| DIST-01 | TBD | Pending |
-| DIST-02 | TBD | Pending |
-| DIST-03 | TBD | Pending |
-| DIST-04 | TBD | Pending |
+| FND-01 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Pending |
+| FND-04 | Phase 1 | Pending |
+| FND-05 | Phase 1 | Pending |
+| FND-06 | Phase 1 | Pending |
+| PUSH-01 | Phase 2 | Pending |
+| PUSH-02 | Phase 3 | Pending |
+| PUSH-03 | Phase 3 | Pending |
+| PUSH-04 | Phase 3 | Pending |
+| PUSH-05 | Phase 2 | Pending |
+| PUSH-06 | Phase 2 | Pending |
+| PUSH-07 | Phase 3 | Pending |
+| PULL-01 | Phase 4 | Pending |
+| PULL-02 | Phase 4 | Pending |
+| PULL-03 | Phase 4 | Pending |
+| PULL-04 | Phase 4 | Pending |
+| PULL-05 | Phase 4 | Pending |
+| BOOT-01 | Phase 4 | Pending |
+| BOOT-02 | Phase 4 | Pending |
+| BOOT-03 | Phase 4 | Pending |
+| UI-01 | Phase 5 | Pending |
+| UI-02 | Phase 5 | Pending |
+| UI-03 | Phase 5 | Pending |
+| UI-04 | Phase 5 | Pending |
+| UI-05 | Phase 5 | Pending |
+| UI-06 | Phase 5 | Pending |
+| EXPORT-01 | Phase 5 | Pending |
+| EXPORT-02 | Phase 5 | Pending |
+| DIST-01 | Phase 1 | Pending |
+| DIST-02 | Phase 1 | Pending |
+| DIST-03 | Phase 1 | Pending |
+| DIST-04 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 33 total
-- Mapped to phases: 0 (filled in by roadmap)
-- Unmapped: 33 ⚠️ (will be resolved by roadmap creation)
+- Mapped to phases: 33
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-01*
-*Last updated: 2026-05-01 after initial definition*
+*Last updated: 2026-05-01 after roadmap creation*
