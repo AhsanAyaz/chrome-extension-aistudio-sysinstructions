@@ -2,8 +2,8 @@
 phase: 01-foundation
 plan: 06
 type: execute
-wave: 3
-depends_on: [01]
+wave: 4
+depends_on: [01, 02, 03, 04, 05]
 files_modified:
   - src/dist-04.test.ts
   - src/build.test.ts
@@ -426,4 +426,5 @@ After completion, create `.planning/phases/01-foundation/01-06-SUMMARY.md` docum
 - The byte-exact manifest contract (D-19) now backed by automated assertion.
 - Acknowledged limitations: scan covers `src/` only, not `node_modules/`; CSP check is a sanity scan, not a full policy parse.
 - Suite timing: combined cold time ~3-5s (driven by `wxt build`), warm time <500ms.
+</output>
 </output>
