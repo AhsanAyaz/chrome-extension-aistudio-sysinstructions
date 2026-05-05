@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: context exhaustion at 91% (2026-05-05)
-last_updated: "2026-05-05T23:09:21.376Z"
-last_activity: 2026-05-05
+status: executing
+stopped_at: "Completed 02-01: shared types, constants, and isValidPayload guard"
+last_updated: "2026-05-05T23:35:23.722Z"
+last_activity: 2026-05-05 -- Phase --phase execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 9
-  completed_plans: 6
-  percent: 67
+  completed_plans: 7
+  percent: 78
 ---
 
 # Project State
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Open AI Studio on any signed-in Chrome and see the same up-to-date library of system instructions — automatically, with no clicks.
-**Current focus:** Phase 02 — Observation Pipeline
+**Current focus:** Phase --phase — 02
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Context gathered — ready to plan
-Last activity: 2026-05-05
-Resume file: .planning/phases/02-observation-pipeline/02-CONTEXT.md
+Phase: --phase (02) — EXECUTING
+Plan: 1 of --name
+Status: Executing Phase --phase
+Last activity: 2026-05-05 -- Phase --phase execution started
+Resume file: None
 
-Progress: [██████████] 100% (Phase 1 complete)
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [██████████] 100% (Phase 1 complete)
 | Phase 01-foundation P04 | 2 | 3 tasks | 3 files |
 | Phase 01-foundation P05 | 2 | 3 tasks | 4 files |
 | Phase 01-foundation P06 | 4 | 2 tasks | 3 files |
+| Phase 02-observation-pipeline P01 | 102 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work:
 - Orphan recovery in ensureInitialized is silent (no setErrorState) — clearing stale syncPending is an expected SW-restart path; Phase 3 may add dedicated tag
 - sysins:local:* key constants colocated in sync-state.ts (not constants.ts) in Phase 1 — minimal surface; may move to constants.ts in Phase 5 when popup needs them
 - _resetForTesting() seam (Pattern S-4) is canonical SW-restart simulation pattern for Phase 2/3/4 — never use vi.resetModules()
+- isValidPayload extracted as shared pure function (OQ-2 resolution) — testable without DOM, reusable by Phase 3 push engine
+- LAST_OBSERVED_KEY uses string literal form not template literal — matches META_KEY style; value visible at a glance
 
 ### Pending Todos
 
@@ -102,8 +105,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-05T22:32:36.961Z
-Stopped at: context exhaustion at 91% (2026-05-05)
+Last session: 2026-05-05T23:35:21.818Z
+Stopped at: Completed 02-01: shared types, constants, and isValidPayload guard
 Resume file: None
 
 **Planned Phase:** 02 (observation-pipeline) — 3 plans — 2026-05-05T23:09:21.373Z
