@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-03-storage-layout-PLAN.md
-last_updated: "2026-05-05T21:38:01.498Z"
+stopped_at: Completed 01-05-sw-bootstrap-resume-PLAN.md
+last_updated: "2026-05-05T21:38:20.322Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 5
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-01)
 ## Current Position
 
 Phase: 01-foundation — EXECUTING
-Plan: 5 of 6 (next: 01-02-shared-primitives-PLAN.md)
+Plan: 6 of 6 (next: 01-02-shared-primitives-PLAN.md)
 Status: Ready to execute
 Last activity: 2026-05-05
 
@@ -55,6 +55,7 @@ Progress: [████████░░] 83%
 | Phase 01-foundation P02 | 4 | 2 tasks | 6 files |
 | Phase 01-foundation P03 | 2 | 2 tasks | 2 files |
 | Phase 01-foundation P04 | 2 | 3 tasks | 3 files |
+| Phase 01-foundation P05 | 2 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,10 @@ Recent decisions affecting current work:
 - Chunking boundary rule: bufBytes + cpBytes > budget (strict greater-than) — 7000-byte ASCII stays as one chunk
 - chunkByteLength uses new Blob([chunk]).size — MV3-SW compatible, no polyfill needed
 - applyRemote uses authoritative timestamp model: max(updatedAt, deletedAt??0); newer authority wins, tie goes to tombstone (D-06/D-18, Recipe 9)
+- Body keys cleared on deleteItem (saves quota immediately); updateItem throws on tombstoned item (no un-delete-via-update path)
+- Orphan recovery in ensureInitialized is silent (no setErrorState) — clearing stale syncPending is an expected SW-restart path; Phase 3 may add dedicated tag
+- sysins:local:* key constants colocated in sync-state.ts (not constants.ts) in Phase 1 — minimal surface; may move to constants.ts in Phase 5 when popup needs them
+- _resetForTesting() seam (Pattern S-4) is canonical SW-restart simulation pattern for Phase 2/3/4 — never use vi.resetModules()
 
 ### Pending Todos
 
@@ -94,8 +99,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-05T21:33:54.768Z
-Stopped at: Completed 01-03-storage-layout-PLAN.md
+Last session: 2026-05-05T21:38:20.319Z
+Stopped at: Completed 01-05-sw-bootstrap-resume-PLAN.md
 Resume file: None
 
 **Planned Phase:** 1 (Foundation) — 6 plans — 2026-05-05T21:13:34.050Z
