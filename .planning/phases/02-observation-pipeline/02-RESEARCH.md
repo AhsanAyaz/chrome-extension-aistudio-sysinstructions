@@ -631,22 +631,16 @@ WXT detects `content/` folder as a content script and `injected/` folder as an u
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **OQ-1: `injectScript()` vs `world: 'MAIN'` content script — which to use?**
-   - What we know: WXT recommends `injectScript()`. Both work in MV3/Chrome. `injectScript()` requires `web_accessible_resources`. `world: 'MAIN'` does not.
-   - What's unclear: Whether D-04's "plain JS, self-contained" wording strictly forbids wrapping it in `defineUnlistedScript`. If the injector can be TypeScript, `defineUnlistedScript` wrapping is clean.
-   - Recommendation: Use `injectScript()` with the raw `.js` file (honoring D-04). If this causes WXT build issues during Wave 0 scaffolding, fall back to `defineContentScript({ world: 'MAIN', runAt: 'document_start' })` — equally valid for MV3-only.
+   - RESOLVED: Use `injectScript()` with the raw `.js` file (honoring D-04) + `web_accessible_resources` registration in `wxt.config.ts`. Plan 02-03 implements this approach.
 
 2. **OQ-2: Guard logic — inline in content script vs extracted pure function**
-   - What we know: The null/empty guard (D-07) is 5–10 lines. Testing it requires either extracting it to a shared pure function or setting up a DOM environment.
-   - What's unclear: Whether the planner wants a `src/shared/guard.ts` helper or a self-contained content script with the guard inline (harder to unit test).
-   - Recommendation: Extract `isValidPayload(value: string): boolean` to `src/shared/guard.ts` — makes it trivially testable with plain Vitest (no DOM needed) and reusable by Phase 3's push engine.
+   - RESOLVED: Extracted to `src/shared/guard.ts` as `isValidPayload(value: string): boolean` — trivially testable with plain Vitest (no DOM needed) and reusable by Phase 3's push engine. Plan 02-01 implements this.
 
 3. **OQ-3: `sendResponse` vs fire-and-forget for `LS_CHANGED`**
-   - What we know: ARCHITECTURE.md says `LS_CHANGED` is "one-way push; no response needed." But `return true` requires calling `sendResponse` to avoid port leak.
-   - What's unclear: Whether Phase 2 should wire up `sendResponse` or just fire-and-forget (no response, no `return true`). Fire-and-forget is simpler but produces a Chrome console warning.
-   - Recommendation: Use `return true` + `sendResponse({ ok: true })` in Phase 2 stub. This closes the port cleanly, produces no console warnings, and establishes the pattern Phase 3 will use for actual error surfacing.
+   - RESOLVED: Use `return true` + `sendResponse({ ok: true })` pattern. Closes the port cleanly, produces no Chrome console warnings, and establishes the pattern Phase 3 will use for actual error surfacing. Plan 02-02 implements this.
 
 ---
 

@@ -47,7 +47,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. The 2-second polling fallback in the content script detects a write that was missed by the injector (simulated by disabling the MAIN-world patch) and fires `LS_CHANGED` within 3 seconds
   3. A `null` or empty-array read from `localStorage` (simulated by clearing the key in DevTools) does NOT trigger a `LS_CHANGED` message; the null-read guard absorbs it silently
   4. Unknown fields on instruction items (fields beyond `title` and `text`) are forwarded to the service worker verbatim — no field stripping occurs in the content script
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 02-01-PLAN.md — Shared primitives: `RawInstruction`/`LastObservedSnapshot` types, `LAST_OBSERVED_KEY`/`WATCHED_LS_KEY` constants, `isValidPayload` guard + 6 unit tests (Wave 1)
+  - [ ] 02-02-PLAN.md — SW message handler: `message-handler.ts` + `message-handler.test.ts` (3 fakeBrowser tests), `onMessage` listener wired in `index.ts` (Wave 2, parallel with 02-03)
+  - [ ] 02-03-PLAN.md — Observation pipeline files: `ls-observer.js` injector, `content/index.ts` relay, `wxt.config.ts` web_accessible_resources, DevTools checkpoint (Wave 2, parallel with 02-02)
 
 ### Phase 3: Push Engine
 **Goal**: Edits made in AI Studio on one device land correctly in `chrome.storage.sync` with per-item UUIDs, timestamps, and quota-respecting batched writes
@@ -96,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-05-05 |
-| 2. Observation Pipeline | 0/TBD | Not started | - |
+| 2. Observation Pipeline | 0/3 | Not started | - |
 | 3. Push Engine | 0/TBD | Not started | - |
 | 4. Pull Engine + Bootstrap | 0/TBD | Not started | - |
 | 5. Popup, Badge, and Export/Import | 0/TBD | Not started | - |
