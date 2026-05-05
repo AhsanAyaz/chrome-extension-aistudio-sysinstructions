@@ -12,7 +12,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **FND-01**: Extension assigns a stable UUID to each instruction on first sight; UUID becomes that instruction's permanent identity (renames do not break identity).
 - [ ] **FND-02**: Each instruction has an `updated_at` timestamp recorded with every change so per-item conflicts can be resolved by last-write-wins.
 - [ ] **FND-03**: Deleted instructions are recorded as soft-delete tombstones with a `deleted_at` timestamp so deletes propagate across devices without being resurrected by stale data on another device.
-- [ ] **FND-04**: Storage uses a versioned schema (`schema_version` key) and namespaced keys (`sysins:*`) so future migrations are possible without ambiguity.
+- [x] **FND-04
+**: Storage uses a versioned schema (`schema_version` key) and namespaced keys (`sysins:*`) so future migrations are possible without ambiguity.
 - [ ] **FND-05**: Storage layout separates a small registry (UUID → `{title, updated_at, deleted_at}`) from instruction body keys, so merge decisions can be made without fetching every body.
 - [ ] **FND-06**: All sync state required to resume work (last-pushed snapshot, in-progress flag, pending-merge queue) is persisted in `chrome.storage.local`, never only in service-worker memory.
 
