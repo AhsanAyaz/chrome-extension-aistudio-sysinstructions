@@ -12,6 +12,12 @@ export default defineConfig({
     permissions: ['storage', 'scripting'],
     host_permissions: ['https://aistudio.google.com/*'],
     // No <all_urls>, no identity, no tabs, no notifications. Matches D-19 verbatim.
+    web_accessible_resources: [
+      {
+        resources: ['injected/ls-observer.js'],
+        matches: ['https://aistudio.google.com/*'],
+      },
+    ],
   },
   hooks: {
     // WXT treats *.ts files in entrypointsDir root as "unlisted-script" entrypoints.
