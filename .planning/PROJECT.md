@@ -16,7 +16,17 @@ For: a single user (initially the author) who uses AI Studio on multiple machine
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+(None yet — ship v1 to validate)
+
+### Implemented (Phase 1 complete)
+
+- [x] Storage schema locked: `sysins:*` namespace, registry/body separation, 7 KB chunk budget (validated in Phase 1)
+- [x] UUID identity model: `crypto.randomUUID()` on createItem, permanent — rename preserves UUID (validated in Phase 1)
+- [x] Tombstone semantics: deletedAt >= updatedAt wins; resurrection rejection via applyRemote (validated in Phase 1)
+- [x] UTF-8-safe chunking: splitIntoChunks/joinChunks with emoji codepoint boundary safety (validated in Phase 1)
+- [x] SW bootstrap: initializeMeta write-if-absent (D-10), orphan syncPending recovery (D-13) (validated in Phase 1)
+- [x] DIST-04: no third-party network calls — static scan + ESLint layer 1 enforced (validated in Phase 1)
+- [x] Manifest locked: permissions exactly ['storage','scripting'], host exactly ['https://aistudio.google.com/*'] (validated in Phase 1)
 
 ### Active
 
@@ -109,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-01 after initialization*
+*Last updated: 2026-05-05 — Phase 1 (Foundation) complete*
