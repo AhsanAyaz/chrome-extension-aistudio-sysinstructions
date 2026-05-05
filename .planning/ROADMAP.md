@@ -30,7 +30,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The extension loads as an unpacked build in Chrome with no manifest errors; only the minimum permissions (`storage`, `scripting`, host permission for `https://aistudio.google.com/*`) are declared
   4. `sysins:meta` (with `schemaVersion: 1`) is written to `chrome.storage.sync` on `onInstalled`; all keys use the `sysins:*` namespace; no data is written outside that namespace
   5. All sync state required to resume after a service worker kill (last-pushed snapshot, in-progress flag, pending-merge queue) is persisted in `chrome.storage.local` — verified by unit test that simulates worker restart
-**Plans**: TBD
+**Plans**: 6 plans
+  - [ ] 01-01-scaffold-PLAN.md — WXT scaffold, locked manifest (D-19), tsconfig/vitest/eslint configs, SW entrypoint stub, smoke build (Wave 0)
+  - [ ] 01-02-shared-primitives-PLAN.md — `shared/constants.ts` (D-24), `shared/types.ts` (registry/body/local/error shapes), `shared/meta-guard.ts` reader guard (Recipe 7) (Wave 1)
+  - [ ] 01-03-storage-layout-PLAN.md — `storage-layout.ts` UTF-8 codepoint-aware chunk/reassemble (Recipe 1, FND-05) (Wave 2)
+  - [ ] 01-04-registry-PLAN.md — `registry.ts` UUID identity, updatedAt tracking, tombstone semantics with resurrection rejection (FND-01..03, Recipe 9) (Wave 2)
+  - [ ] 01-05-sw-bootstrap-resume-PLAN.md — `meta-bootstrap.ts` D-10 write-if-absent + `sync-state.ts` local resume schema + SW `onInstalled` wiring + restart simulation tests (FND-04, FND-06) (Wave 3)
+  - [ ] 01-06-dist04-manifest-snapshot-PLAN.md — Vitest static-scan for forbidden network APIs (Recipe 8 layer 2) + manifest snapshot byte-exact assertion (DIST-04, DIST-02) (Wave 3)
 
 ### Phase 2: Observation Pipeline
 **Goal**: AI Studio's localStorage writes are reliably detected and forwarded to the service worker before any sync logic is wired up
@@ -89,7 +95,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/6 | Planned | - |
 | 2. Observation Pipeline | 0/TBD | Not started | - |
 | 3. Push Engine | 0/TBD | Not started | - |
 | 4. Pull Engine + Bootstrap | 0/TBD | Not started | - |
