@@ -64,3 +64,23 @@ export interface SyncStatus {
   errorState?: ErrorState;
   errorDetail?: string;
 }
+
+// Shape of one item as AI Studio writes it to localStorage.
+// Index signature preserves unknown fields verbatim — D-08 / PUSH-06.
+// title and text are the only currently known fields.
+export interface RawInstruction {
+  title: string;
+  text: string;
+  [unknownAiStudioField: string]: unknown;
+}
+
+// sysins:local:lastObserved — D-02
+// Written by Phase 2's onMessage stub; read by Phase 3's push engine
+// as the starting snapshot for the first diff cycle.
+// Phase 3 transition: superseded by sysins:local:lastPushed (D-12)
+// once Phase 3 runs a successful push.
+export interface LastObservedSnapshot {
+  lastObservedAt: number; // epoch ms
+  itemCount: number;
+  items: RawInstruction[];
+}
