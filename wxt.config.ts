@@ -13,4 +13,16 @@ export default defineConfig({
     host_permissions: ['https://aistudio.google.com/*'],
     // No <all_urls>, no identity, no tabs, no notifications. Matches D-19 verbatim.
   },
+  hooks: {
+    // WXT treats *.ts files in entrypointsDir root as "unlisted-script" entrypoints.
+    // Exclude Vitest test files so `wxt build` does not try to bundle them.
+    'entrypoints:found': (_wxt, infos) => {
+      const before = infos.length;
+      infos.splice(
+        0,
+        before,
+        ...infos.filter((info) => !info.inputPath.endsWith('.test.ts')),
+      );
+    },
+  },
 });
