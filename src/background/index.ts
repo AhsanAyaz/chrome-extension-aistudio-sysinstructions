@@ -5,6 +5,8 @@ import {
   clearSyncPending,
 } from './sync-state';
 import { PENDING_BATCH_TTL_MS } from '../shared/constants';
+import { handleLsChanged } from './message-handler';
+import type { RawInstruction } from '../shared/types';
 
 /**
  * Module-level ephemeral state. Lost on real SW kill (which is the entire
@@ -62,10 +64,22 @@ export default defineBackground(() => {
     await ensureInitialized();
   });
 
-  // Phase 1 boundary discipline:
-  //   - No chrome.runtime.onMessage listener (Phase 2)
+  // Phase 2: LS_CHANGED handler
+  // D-03: ensureInitialized is called before handleLsChanged on every SW wake
+  // triggered by a content script message — ensures orphan recovery runs.
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === 'LS_CHANGED') {
+      ensureInitialized()
+        .then(() => handleLsChanged(message.payload as RawInstruction[]))
+        .then(() => sendResponse({ ok: true }))
+        .catch((err) => sendResponse({ ok: false, error: String(err) }));
+      return true; // keep port open for async response (Pitfall 2 — required for async handlers)
+    }
+    // return undefined for unhandled message types — Chrome closes port immediately
+  });
+
+  // Phase 3+ boundary:
   //   - No chrome.storage.onChanged listener (Phase 3)
   //   - No chrome.alarms (Phase 3)
   //   - No chrome.tabs.sendMessage (Phase 4)
-  // Adding these now would entangle scopes and break the phase boundary.
 });
