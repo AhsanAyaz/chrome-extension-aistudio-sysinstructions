@@ -2,8 +2,8 @@
 phase: 01-foundation
 plan: 04
 type: execute
-wave: 2
-depends_on: [02]
+wave: 3
+depends_on: [02, 03]
 files_modified:
   - src/background/registry.ts
   - src/background/registry.test.ts
@@ -82,13 +82,13 @@ export type SyncRegistry = Record<string, RegistryRecord>;
 export interface BodyPayload { text: string; [k: string]: unknown }
 ```
 
-<!-- Plan 03 (storage-layout, parallel) is independent of this plan. -->
+<!-- Plan 03 (storage-layout) ships in Wave 2 — earlier than this plan. -->
 <!-- This plan does NOT need splitIntoChunks for Phase 1 — body chunk count is computed lazily, -->
 <!-- but for symmetry & to validate the integration, createItem may import splitIntoChunks. -->
 <!-- Decision: createItem WILL call splitIntoChunks to compute the `chunks` field at write time. -->
-<!-- This means Plan 04 has a soft dependency on Plan 03's exports - but they share Wave 2, -->
-<!-- they don't write to the same files, and the import is one-way. They run in parallel; -->
-<!-- whoever finishes second simply pulls in the dependency import. -->
+<!-- This means Plan 04 has a hard dependency on Plan 03's exports — Plan 04 declares depends_on: [02, 03] -->
+<!-- and lands in Wave 3 (max(wave 1, wave 2) + 1 = 3). They do not write to the same files; the import -->
+<!-- is one-way (registry.ts -> storage-layout.ts). Plan 03 must be merged before Plan 04 starts. -->
 
 <!-- This plan ESTABLISHES these contracts (consumed by Phases 2-4): -->
 ```typescript
@@ -174,7 +174,7 @@ export async function shortHash(input: string): Promise<string>; // 16-char hex
     - .planning/phases/01-foundation/01-PATTERNS.md (lines 265-294) — required exports list
     - src/shared/constants.ts (Plan 02 output) — REGISTRY_KEY, BODY_KEY_PREFIX
     - src/shared/types.ts (Plan 02 output) — RegistryRecord, SyncRegistry, BodyPayload
-    - src/background/storage-layout.ts (Plan 03 sibling output, will be available since Wave 2 plans run in parallel but tests run after both) — splitIntoChunks for chunks count
+    - src/background/storage-layout.ts (Plan 03 output, available — Plan 03 ships in Wave 2, this plan is Wave 3) — splitIntoChunks for chunks count
     - .planning/research/SUMMARY.md (item 3, single batched set rule) — informs body write pattern in createItem
   </read_first>
   <behavior>

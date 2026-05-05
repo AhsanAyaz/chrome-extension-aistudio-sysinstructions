@@ -3,7 +3,7 @@ phase: 01-foundation
 plan: 05
 type: execute
 wave: 3
-depends_on: [01, 02]
+depends_on: [02, 03]
 files_modified:
   - src/background/meta-bootstrap.ts
   - src/background/sync-state.ts
@@ -103,10 +103,12 @@ export interface SyncStatus { state: 'idle'|'syncing'|'error'; lastSyncAt: numbe
 export type ErrorState = '...' | 'PENDING_MERGE_OVERFLOW';
 ```
 
-<!-- This plan does NOT depend on Plans 03 (storage-layout) or 04 (registry) — they are Wave 2, -->
-<!-- this is Wave 3 but the only Plan 02 contracts it consumes are the constants/types/meta-guard. -->
-<!-- Plans 03/04 must merge to main before this plan runs only because the executor runs all of -->
-<!-- Wave 2 first; this plan does NOT import from registry.ts or storage-layout.ts. -->
+<!-- This plan is Wave 3. It declares depends_on: [02, 03] — -->
+<!-- Plan 02 supplies the constants/types/meta-guard contracts it actually imports; -->
+<!-- Plan 03 (storage-layout) is named as a conservative staging dep so this plan -->
+<!-- runs after the storage-layout module has settled, even though it does NOT -->
+<!-- import from registry.ts or storage-layout.ts. The wave-graph rule is satisfied -->
+<!-- because max(wave_of_deps) + 1 = max(1, 2) + 1 = 3. -->
 
 <!-- This plan ESTABLISHES these contracts for Phase 2-4: -->
 ```typescript
@@ -684,4 +686,5 @@ After completion, create `.planning/phases/01-foundation/01-05-SUMMARY.md` docum
 - Decision log: the 4 `sysins:local:*` key constants are colocated in sync-state.ts (not constants.ts) — may move in Phase 5 when popup consumes
 - Total passing tests in `service-worker.test.ts` and which D-25 cases each covers
 - The `_resetForTesting()` testing seam pattern (S-4) is now the canonical SW-restart-simulation pattern — Phase 2/3/4 plans should re-export `_resetForTesting` from any module that holds in-memory state
+</output>
 </output>

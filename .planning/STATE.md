@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 01-03-storage-layout-PLAN.md
-last_updated: "2026-05-05T21:33:54.771Z"
+last_updated: "2026-05-05T21:38:01.498Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 3
-  percent: 50
+  completed_plans: 5
+  percent: 83
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-01)
 ## Current Position
 
 Phase: 01-foundation — EXECUTING
-Plan: 4 of 6 (next: 01-02-shared-primitives-PLAN.md)
+Plan: 5 of 6 (next: 01-02-shared-primitives-PLAN.md)
 Status: Ready to execute
 Last activity: 2026-05-05
 
-Progress: [█████░░░░░] 50%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [█████░░░░░] 50%
 *Updated after each plan completion*
 | Phase 01-foundation P02 | 4 | 2 tasks | 6 files |
 | Phase 01-foundation P03 | 2 | 2 tasks | 2 files |
+| Phase 01-foundation P04 | 2 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,7 @@ Recent decisions affecting current work:
 - @types/chrome added as dev dependency — WXT 0.20 uses @types/chrome directly; required for standalone tsc --noEmit with chrome.* globals
 - Chunking boundary rule: bufBytes + cpBytes > budget (strict greater-than) — 7000-byte ASCII stays as one chunk
 - chunkByteLength uses new Blob([chunk]).size — MV3-SW compatible, no polyfill needed
+- applyRemote uses authoritative timestamp model: max(updatedAt, deletedAt??0); newer authority wins, tie goes to tombstone (D-06/D-18, Recipe 9)
 
 ### Pending Todos
 
