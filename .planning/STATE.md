@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-shared-primitives-PLAN.md
-last_updated: "2026-05-05T21:30:42.476Z"
+stopped_at: Completed 01-03-storage-layout-PLAN.md
+last_updated: "2026-05-05T21:33:54.771Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 2
-  percent: 33
+  completed_plans: 3
+  percent: 50
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-01)
 ## Current Position
 
 Phase: 01-foundation — EXECUTING
-Plan: 3 of 6 (next: 01-02-shared-primitives-PLAN.md)
+Plan: 4 of 6 (next: 01-02-shared-primitives-PLAN.md)
 Status: Ready to execute
 Last activity: 2026-05-05
 
-Progress: [███░░░░░░░] 33%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [███░░░░░░░] 33%
 
 *Updated after each plan completion*
 | Phase 01-foundation P02 | 4 | 2 tasks | 6 files |
+| Phase 01-foundation P03 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,8 @@ Recent decisions affecting current work:
 - OQ-1: 'PENDING_MERGE_OVERFLOW' added to ErrorState union — D-15 defines shape in Phase 1; widening at design time avoids future schema change
 - OQ-3: 'meta absent' folds into MALFORMED_REMOTE — no dedicated NO_META tag; comment in code documents choice for Phase 2+ extension
 - @types/chrome added as dev dependency — WXT 0.20 uses @types/chrome directly; required for standalone tsc --noEmit with chrome.* globals
+- Chunking boundary rule: bufBytes + cpBytes > budget (strict greater-than) — 7000-byte ASCII stays as one chunk
+- chunkByteLength uses new Blob([chunk]).size — MV3-SW compatible, no polyfill needed
 
 ### Pending Todos
 
@@ -89,8 +92,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-05T21:30:42.473Z
-Stopped at: Completed 01-02-shared-primitives-PLAN.md
+Last session: 2026-05-05T21:33:54.768Z
+Stopped at: Completed 01-03-storage-layout-PLAN.md
 Resume file: None
 
 **Planned Phase:** 1 (Foundation) — 6 plans — 2026-05-05T21:13:34.050Z
