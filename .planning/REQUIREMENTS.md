@@ -65,7 +65,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **DIST-01**: The extension is sideloadable as an unpacked build for personal use on the author's machines.
 - [x] **DIST-02**: The manifest requests only the minimum permissions required: `storage`, host permission for `https://aistudio.google.com/*`, and (if needed) `scripting`. No `<all_urls>`, no broad host access, no `identity` permission unless strictly required.
 - [x] **DIST-03**: The codebase, manifest, and build output are kept Chrome-Web-Store-clean (no debug-only flags, no test telemetry, no dev-only host permissions) so a future store submission requires no rework.
-- [ ] **DIST-04**: No instruction data leaves the user's own Google Chrome sync — the extension makes zero third-party network calls.
+- [x] **DIST-04**: No instruction data leaves the user's own Google Chrome sync — the extension makes zero third-party network calls.
 
 ## v2 Requirements
 
@@ -138,9 +138,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPORT-01 | Phase 5 | Pending |
 | EXPORT-02 | Phase 5 | Pending |
 | DIST-01 | Phase 1 | Complete (01-01) |
-| DIST-02 | Phase 1 | Complete (01-01) |
+| DIST-02 | Phase 1 | Complete (01-01, 01-06) |
 | DIST-03 | Phase 1 | Complete (01-01) |
-| DIST-04 | Phase 1 | Pending |
+| DIST-04 | Phase 1 | Complete (01-06) |
 
 **Coverage:**
 - v1 requirements: 33 total
