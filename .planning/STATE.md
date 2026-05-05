@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 02-01: shared types, constants, and isValidPayload guard"
-last_updated: "2026-05-05T23:35:23.722Z"
+stopped_at: "Completed 02-02: SW onMessage stub and lastObserved snapshot"
+last_updated: "2026-05-05T23:38:29.673Z"
 last_activity: 2026-05-05 -- Phase --phase execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
@@ -31,7 +31,7 @@ Status: Executing Phase --phase
 Last activity: 2026-05-05 -- Phase --phase execution started
 Resume file: None
 
-Progress: [████████░░] 78%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [████████░░] 78%
 | Phase 01-foundation P05 | 2 | 3 tasks | 4 files |
 | Phase 01-foundation P06 | 4 | 2 tasks | 3 files |
 | Phase 02-observation-pipeline P01 | 102 | 2 tasks | 4 files |
+| Phase 02-observation-pipeline P02 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - _resetForTesting() seam (Pattern S-4) is canonical SW-restart simulation pattern for Phase 2/3/4 — never use vi.resetModules()
 - isValidPayload extracted as shared pure function (OQ-2 resolution) — testable without DOM, reusable by Phase 3 push engine
 - LAST_OBSERVED_KEY uses string literal form not template literal — matches META_KEY style; value visible at a glance
+- OQ-3 resolved: return true + sendResponse({ ok }) pattern chosen for async onMessage handler — closes port cleanly, no console warnings
+- D-03 enforcement: ensureInitialized chained before handleLsChanged on every LS_CHANGED SW wake
 
 ### Pending Todos
 
@@ -105,8 +108,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-05T23:35:21.818Z
-Stopped at: Completed 02-01: shared types, constants, and isValidPayload guard
+Last session: 2026-05-05T23:38:29.670Z
+Stopped at: Completed 02-02: SW onMessage stub and lastObserved snapshot
 Resume file: None
 
 **Planned Phase:** 02 (observation-pipeline) — 3 plans — 2026-05-05T23:09:21.373Z
