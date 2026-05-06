@@ -30,7 +30,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PUSH-04**: Single instructions larger than the 8KB-per-item quota are transparently chunked across multiple `sysins:body:<uuid>:cN` keys; reassembly is deterministic and does not require user action.
 - [x] **PUSH-05**: A `null`, missing, or empty-array localStorage read is never auto-propagated as "user deleted everything" — empty results are treated as a detection failure unless the user explicitly clicks Push Now.
 - [x] **PUSH-06**: Unknown fields on instruction items (anything beyond `title` and `text`) are preserved end-to-end so future AI Studio schema additions are not silently dropped.
-- [ ] **PUSH-07**: Pushes are debounced/throttled (target: 30-second alarm flush) so a flurry of edits in AI Studio coalesces into one batched write.
+- [x] **PUSH-07
+**: Pushes are debounced/throttled (target: 30-second alarm flush) so a flurry of edits in AI Studio coalesces into one batched write.
 
 ### Sync Engine — Pull (chrome.storage.sync → localStorage)
 
