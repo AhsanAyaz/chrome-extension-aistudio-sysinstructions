@@ -9,6 +9,17 @@ import { injectScript } from 'wxt/utils/inject-script';
 import type { RawInstruction } from '../shared/types';
 import { isValidPayload } from '../shared/guard';
 
+/**
+ * Fire-and-forget wrapper for chrome.runtime.sendMessage.
+ * Suppresses unhandled-rejection noise when the SW is inactive; the SW will
+ * catch up via the polling fallback (D-09).
+ */
+function fireAndForget(payload: object): void {
+  chrome.runtime.sendMessage(payload).catch(() => {
+    // SW may be inactive; message dropped intentionally. SW will catch up via polling.
+  });
+}
+
 export default defineContentScript({
   matches: ['https://aistudio.google.com/*'],
   runAt: 'document_start',
@@ -35,7 +46,7 @@ export default defineContentScript({
       if (!isValidPayload(value)) return;
 
       // D-08 / PUSH-06: forward verbatim — no field stripping.
-      chrome.runtime.sendMessage({
+      fireAndForget({
         type: 'LS_CHANGED',
         payload: JSON.parse(value) as RawInstruction[],
       });
@@ -54,7 +65,7 @@ export default defineContentScript({
       if (!isValidPayload(value)) return; // D-07 / PUSH-05
 
       // D-08 / PUSH-06: forward verbatim
-      chrome.runtime.sendMessage({
+      fireAndForget({
         type: 'LS_CHANGED',
         payload: JSON.parse(value) as RawInstruction[],
       });
