@@ -63,11 +63,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. A flurry of 5 rapid AI Studio saves within 10 seconds results in exactly one batched `chrome.storage.sync.set()` call (verifiable via DevTools network/storage panel showing a single sync write round-trip)
   5. The badge is set to amber or red (never left empty) if any push write fails (quota exceeded, rate limit, connectivity) — the error state is observable in the toolbar icon within 5 seconds of the failure
 **Plans**: 5 plans
-  - [ ] 03-01-PLAN.md — Add `PENDING_WRITE_KEY`/`FLUSH_ALARM_NAME` constants to `constants.ts`; add `"alarms"` permission to `wxt.config.ts` (Wave 1)
-  - [ ] 03-02-PLAN.md — `push-engine.ts` TDD: `diffAndAccumulate`, UUID assignment, pendingWrite persistence, `drainPendingWrite`/`clearPendingWrite` (Wave 2, parallel with 03-03)
-  - [ ] 03-03-PLAN.md — `alarm-flush.ts` TDD: `scheduleFlush` (30s debounce), `flushPendingWrite` (single batched sync.set), badge error surfacing, `writeLastPushed` (Wave 2, parallel with 03-02)
-  - [ ] 03-04-PLAN.md — Wire: replace Phase 2 `handleLsChanged` stub; register `chrome.alarms.onAlarm` listener in `index.ts` (Wave 3)
-  - [ ] 03-05-PLAN.md — DevTools end-to-end checkpoint: all 5 phase success criteria verified in real Chrome (Wave 4)
+  - [x] 03-01-PLAN.md — Add `PENDING_WRITE_KEY`/`FLUSH_ALARM_NAME` constants to `constants.ts`; add `"alarms"` permission to `wxt.config.ts` (Wave 1)
+  - [x] 03-02-PLAN.md — `push-engine.ts` TDD: `diffAndAccumulate`, UUID assignment, pendingWrite persistence, `drainPendingWrite`/`clearPendingWrite` (Wave 2, parallel with 03-03)
+  - [x] 03-03-PLAN.md — `alarm-flush.ts` TDD: `scheduleFlush` (30s debounce), `flushPendingWrite` (single batched sync.set), badge error surfacing, `writeLastPushed` (Wave 2, parallel with 03-02)
+  - [x] 03-04-PLAN.md — Wire: replace Phase 2 `handleLsChanged` stub; register `chrome.alarms.onAlarm` listener in `index.ts` (Wave 3)
+  - [x] 03-05-PLAN.md — DevTools end-to-end checkpoint: all 5 phase success criteria verified in real Chrome (Wave 4)
 
 ### Phase 4: Pull Engine + Bootstrap
 **Goal**: Full bidirectional sync works across two machines, first-install on a new device performs a union merge (not an overwrite), and auto-sync pauses when the Chrome profile account and AI Studio account do not match
