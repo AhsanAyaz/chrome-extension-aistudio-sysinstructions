@@ -31,7 +31,7 @@ import type {
   LastPushedEntry,
 } from '../shared/types';
 import { applyRemote, reconstructInstructions } from './registry';
-import { LAST_PUSHED_KEY } from './sync-state';
+import { LAST_PUSHED_KEY, writeSyncStatus } from './sync-state';
 import { shortHash } from './hash';
 
 // ---------------------------------------------------------------------------
@@ -83,6 +83,13 @@ export async function handleRemoteChanged(
   console.log('[sysins] pull-engine: applied', payload.length, 'item(s) from remote');
 
   await deliverToTab(payload);
+
+  // Phase 5: clear badge to healthy empty state after successful pull (D-06)
+  // Mirrors the setBadgeText({ text: '' }) call in alarm-flush.ts flushPendingWrite success path.
+  const now = Date.now();
+  await writeSyncStatus({ state: 'idle', lastSyncAt: now });
+  await chrome.action.setBadgeText({ text: '' });
+  await chrome.action.setBadgeBackgroundColor({ color: '#000000' }); // reset color
 }
 
 // ---------------------------------------------------------------------------
