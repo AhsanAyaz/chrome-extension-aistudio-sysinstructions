@@ -27,7 +27,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PUSH-01**: When AI Studio writes to `localStorage["aistudio_all_system_instructions"]`, the extension detects the change without requiring a page reload.
 - [x] **PUSH-02
 **: The extension assigns UUIDs to any instructions that do not yet have one, computes a per-item diff against the last-pushed snapshot, and pushes only the changed items.
-- [ ] **PUSH-03**: All chunks/keys for one push cycle are written via a single `chrome.storage.sync.set({...})` call — never per-item loops — so writes stay under the 120/min and 1800/hr rate limits.
+- [x] **PUSH-03
+**: All chunks/keys for one push cycle are written via a single `chrome.storage.sync.set({...})` call — never per-item loops — so writes stay under the 120/min and 1800/hr rate limits.
 - [x] **PUSH-04
 **: Single instructions larger than the 8KB-per-item quota are transparently chunked across multiple `sysins:body:<uuid>:cN` keys; reassembly is deterministic and does not require user action.
 - [x] **PUSH-05**: A `null`, missing, or empty-array localStorage read is never auto-propagated as "user deleted everything" — empty results are treated as a detection failure unless the user explicitly clicks Push Now.
