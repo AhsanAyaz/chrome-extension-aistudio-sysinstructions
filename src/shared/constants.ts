@@ -21,3 +21,11 @@ export const LAST_OBSERVED_KEY = 'sysins:local:lastObserved';
 // Cannot be imported by the MAIN-world injector (no module system there) —
 // that file uses a hardcoded literal with a comment pointing here.
 export const WATCHED_LS_KEY = 'aistudio_all_system_instructions';
+
+// Phase 3: pending write batch key (persisted to chrome.storage.local across SW kill — D-13/FND-06)
+// Stores the full key→value batch for the next sync flush.
+export const PENDING_WRITE_KEY = `${LOCAL_KEY_PREFIX}pendingWrite`;
+
+// Phase 3: name of the debounce alarm (PUSH-07, Hard Rule 3).
+// sysins-flush fires after 30 seconds (delayInMinutes: 0.5, Chrome 120+ minimum).
+export const FLUSH_ALARM_NAME = 'sysins-flush';

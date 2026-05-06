@@ -9,7 +9,7 @@ export default defineConfig({
     description: 'Sync AI Studio system instructions across signed-in Chrome devices.',
     version: '0.1.0',
     minimum_chrome_version: '116',
-    permissions: ['storage', 'scripting'],
+    permissions: ['storage', 'scripting', 'alarms'],
     host_permissions: ['https://aistudio.google.com/*'],
     // No <all_urls>, no identity, no tabs, no notifications. Matches D-19 verbatim.
     web_accessible_resources: [

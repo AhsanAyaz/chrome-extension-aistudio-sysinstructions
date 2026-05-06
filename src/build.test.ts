@@ -42,11 +42,12 @@ describe('DIST-02: manifest permissions', () => {
     expect(m.manifest_version).toBe(3);
   });
 
-  it('permissions is exactly ["storage", "scripting"]', () => {
+  it('permissions is exactly ["storage", "scripting", "alarms"]', () => {
     const m = loadManifest();
     // Order-insensitive equality with cardinality check.
+    // Phase 3 adds "alarms" (required for chrome.alarms.create debounce — PUSH-07).
     const perms = (m.permissions ?? []).slice().sort();
-    expect(perms).toEqual(['scripting', 'storage']);
+    expect(perms).toEqual(['alarms', 'scripting', 'storage']);
   });
 
   it('host_permissions is exactly ["https://aistudio.google.com/*"]', () => {
