@@ -124,7 +124,7 @@ describe('Case 1: local-only items — no remote registry', () => {
     // Exactly ONE chrome.storage.sync.set call (Hard Rule 3)
     expect(syncSetSpy).toHaveBeenCalledOnce();
 
-    const [[batchArg]] = syncSetSpy.mock.calls;
+    const batchArg = syncSetSpy.mock.calls[0]![0];
     const batch = batchArg as Record<string, unknown>;
 
     // Registry must be present
@@ -185,8 +185,8 @@ describe('Case 2: title match reuses remote UUID (BOOT-02)', () => {
 
     expect(syncSetSpy).toHaveBeenCalledOnce();
 
-    const [[batchArg]] = syncSetSpy.mock.calls;
-    const batch = batchArg as Record<string, unknown>;
+    const batchArg2 = syncSetSpy.mock.calls[0]![0];
+    const batch = batchArg2 as Record<string, unknown>;
     const registry = batch[REGISTRY_KEY] as SyncRegistry;
 
     // The remote UUID must be present in the merged registry
@@ -225,8 +225,8 @@ describe('Case 3: title collision (D-06) — first by updatedAt desc wins', () =
 
     expect(syncSetSpy).toHaveBeenCalledOnce();
 
-    const [[batchArg]] = syncSetSpy.mock.calls;
-    const registry = (batchArg as Record<string, unknown>)[REGISTRY_KEY] as SyncRegistry;
+    const batchArg3 = syncSetSpy.mock.calls[0]![0];
+    const registry = (batchArg3 as Record<string, unknown>)[REGISTRY_KEY] as SyncRegistry;
 
     // uuidA (highest updatedAt) must be present in merged registry for "Foo"
     expect(registry[uuidA]).toBeDefined();
@@ -269,8 +269,8 @@ describe('Case 4: tombstone beats local live item (Hard Rule 10 via mergeRegistr
 
     expect(syncSetSpy).toHaveBeenCalledOnce();
 
-    const [[batchArg]] = syncSetSpy.mock.calls;
-    const registry = (batchArg as Record<string, unknown>)[REGISTRY_KEY] as SyncRegistry;
+    const batchArg4 = syncSetSpy.mock.calls[0]![0];
+    const registry = (batchArg4 as Record<string, unknown>)[REGISTRY_KEY] as SyncRegistry;
 
     // The tombstoned entry must be present with deletedAt set
     expect(registry[tombUuid]?.deletedAt).toBe(futureTs);
