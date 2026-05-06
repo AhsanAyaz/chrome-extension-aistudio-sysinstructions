@@ -3,7 +3,7 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   srcDir: 'src',
   entrypointsDir: '.', // matches D-23 layout: src/background/, src/content/, src/popup/
-  // No `modules: ['@wxt-dev/module-svelte']` in Phase 1 — Svelte is Phase 5.
+  modules: ['@wxt-dev/module-svelte'],  // Phase 5 addition (D-11)
   manifest: {
     name: 'AI Studio Instructions Sync',
     description: 'Sync AI Studio system instructions across signed-in Chrome devices.',

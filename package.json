@@ -15,11 +15,15 @@
   },
   "devDependencies": {
     "@types/chrome": "^0.1.40",
+    "@wxt-dev/module-svelte": "^2.0.5",
     "eslint": "^9.0.0",
     "happy-dom": "^15.0.0",
     "typescript": "~5.8.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "4.1.5",
     "wxt": "0.20.25"
+  },
+  "dependencies": {
+    "svelte": "^5.55.5"
   }
 }
