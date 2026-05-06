@@ -80,8 +80,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Making a push-triggered `localStorage` write does not cause a second push cycle (no infinite sync loop) — verified by observing that only one `chrome.storage.sync.set()` fires per edit session via the service worker console
   5. When two AI Studio tabs are open simultaneously and a remote pull arrives, only one tab applies the update — the other tab receives no duplicate `APPLY_REMOTE` message
   6. (Research-gated) If the Chrome profile email differs from the AI Studio account shown on the page, auto-sync is paused and the popup surface shows a human-readable account-mismatch warning — auto-sync does not run silently across mismatched accounts
-**Plans**: TBD
-**Research note**: Criterion 6 (BOOT-03/AISTUDIO-4) requires a live-page spike to confirm `chrome.identity.getProfileUserInfo()` availability without the `identity` permission and to identify where the AI Studio page exposes the signed-in account identifier in the DOM. This spike must complete before Phase 4 plan is finalized.
+**Plans**: 6 plans
+Plans:
+- [ ] 04-01-PLAN.md — BOOT-03 spike: confirm identity.email behavior + AI Studio DOM selector for signed-in account (Wave 0, autonomous: false)
+- [x] 04-02-PLAN.md — Shared constants + types: BOOTSTRAP_NEEDED_KEY, PENDING_REMOTE_KEY, ApplyRemoteMessage, BootstrapMessage, PendingRemoteState, BootstrapNeededFlag (Wave 1)
+- [ ] 04-03-PLAN.md — pull-engine.ts TDD: handleRemoteChanged, deliverToTab, lastPushed update (Wave 2, parallel with 04-04)
+- [ ] 04-04-PLAN.md — bootstrap.ts TDD: handleLsBootstrap, union merge, title-match UUID assignment, BOOT-01/BOOT-02 (Wave 2, parallel with 04-03)
+- [ ] 04-05-PLAN.md — Wire: SW index.ts onChanged+onInstalled+LS_BOOTSTRAP, content/index.ts APPLY_REMOTE+bootstrap+visibilitychange, account-preflight.ts, identity.email permission (Wave 3)
+- [ ] 04-06-PLAN.md — DevTools end-to-end checkpoint: all 6 phase success criteria verified in real Chrome (Wave 4, autonomous: false)
 
 ### Phase 5: Popup, Badge, and Export/Import
 **Goal**: The user has full visibility into sync state and manual escape hatches through a thin popup over the proven sync engine
@@ -105,6 +111,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-05-05 |
 | 2. Observation Pipeline | 3/3 | Complete | 2026-05-06 |
-| 3. Push Engine | 0/5 | Not started | - |
-| 4. Pull Engine + Bootstrap | 0/TBD | Not started | - |
+| 3. Push Engine | 5/5 | Complete | 2026-05-06 |
+| 4. Pull Engine + Bootstrap | 1/6 | In progress | - |
 | 5. Popup, Badge, and Export/Import | 0/TBD | Not started | - |

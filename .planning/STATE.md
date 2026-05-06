@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 4 context gathered
-last_updated: "2026-05-06T09:54:30.965Z"
-last_activity: 2026-05-06
+status: executing
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-05-06T10:49:00Z"
+last_activity: 2026-05-06 -- Phase 04 Plan 02 complete (shared constants + types)
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  total_plans: 20
+  completed_plans: 15
+  percent: 75
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Open AI Studio on any signed-in Chrome and see the same up-to-date library of system instructions — automatically, with no clicks.
-**Current focus:** Phase --phase — 03
+**Current focus:** Phase 04 — pull-engine-bootstrap
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-05-06
-Resume file: --resume-file
+Phase: 04 (pull-engine-bootstrap) — EXECUTING
+Plan: 2 of 6
+Status: Executing Phase 04
+Last activity: 2026-05-06 -- Plan 04-02 complete (Phase 4 constants + types)
+Resume file: None
 
 Progress: [█████████░] 93%
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 93%
 | Phase 03-push-engine P02 | 110 | 1 tasks | 2 files |
 | Phase 03-push-engine P03 | 7 minutes | 3 tasks | 2 files |
 | Phase 03-push-engine P04 | 3 minutes | 1 tasks | 3 files |
+| Phase 04-pull-engine-bootstrap P02 | 1 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,8 @@ Recent decisions affecting current work:
 - payload.length > 0 guard before scheduleFlush — diffAndAccumulate returns early on empty payload; no flush alarm needed
 - D-03 test updated for Phase 3: handleLsChanged now writes a fresh SYNC_PENDING_KEY sentinel via persistPendingWrite; orphan recovery replaces (not removes) the sentinel
 - T-03-04-b mitigation: alarm.name !== FLUSH_ALARM_NAME guard in onAlarm — spurious alarm names are a no-op
+- BOOTSTRAP_NEEDED_KEY and PENDING_REMOTE_KEY use template-literal pattern (${LOCAL_KEY_PREFIX}...) — D-24 enforcement, no inline string literals in Phase 4 files
+- BootstrapNeededFlag is an object with triggeredAt (not boolean) — enables stale-flag detection without schema change
 
 ### Pending Todos
 
@@ -122,7 +125,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 4 (BOOT-03 / AISTUDIO-4): A live-page spike is required before Phase 4 planning to confirm `chrome.identity.getProfileUserInfo()` availability without the `identity` permission and to locate the AI Studio page's signed-in account identifier in the DOM. Auto-sync must not run across mismatched accounts.
+- Phase 4 (BOOT-03 / AISTUDIO-4): Spike is Plan 04-01 (autonomous: false — requires live Chrome). Must confirm AI Studio DOM selector for signed-in account email before implementation plans (04-02+) can execute. identity.email permission confirmed required (D-03) — will be added in Plan 04-05.
 
 ## Deferred Items
 
@@ -132,8 +135,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: --stopped-at
-Stopped at: Phase 4 context gathered
+Last session: 2026-05-06T10:49:00Z
+Stopped at: Completed 04-02-PLAN.md — Phase 4 shared constants + types
 Resume file: None
 
 **Planned Phase:** 03 (push-engine) — 5 plans — 2026-05-06T01:45:12.549Z
