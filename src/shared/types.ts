@@ -84,3 +84,35 @@ export interface LastObservedSnapshot {
   itemCount: number;
   items: RawInstruction[];
 }
+
+// Phase 4 message types — SW → content script (APPLY_REMOTE)
+// Carries the merged live instruction array after a pull or bootstrap.
+// Tombstoned items are excluded from payload before sending.
+export interface ApplyRemoteMessage {
+  type: 'APPLY_REMOTE';
+  payload: RawInstruction[]; // merged live array (tombstoned items excluded)
+}
+
+// Phase 4 message types — content script → SW (LS_BOOTSTRAP)
+// Sent on first page load when BOOTSTRAP_NEEDED_KEY is present in chrome.storage.local.
+// Payload is the raw localStorage snapshot read by the content script.
+export interface BootstrapMessage {
+  type: 'LS_BOOTSTRAP';
+  payload: RawInstruction[]; // raw localStorage snapshot from content script
+}
+
+// sysins:local:pendingRemote — D-08
+// Written by SW when no active AI Studio tab is found after a remote pull.
+// Content script reads and removes this key on visibilitychange (tab regains focus).
+export interface PendingRemoteState {
+  payload: RawInstruction[]; // merged array waiting for a tab to apply
+  enqueuedAt: number; // epoch ms — allows age-based pruning if desired
+}
+
+// sysins:local:bootstrapNeeded — D-05
+// Written by SW on onInstalled(reason='install'). Cleared by SW after union merge.
+// Object shape (not boolean) so stale-flag detection is possible:
+// if triggeredAt is old and the flag was never consumed, it can be diagnosed.
+export interface BootstrapNeededFlag {
+  triggeredAt: number; // epoch ms
+}
