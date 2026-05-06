@@ -69,6 +69,10 @@ export default defineBackground(() => {
   // triggered by a content script message — ensures orphan recovery runs.
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === 'LS_CHANGED') {
+      if (!Array.isArray(message.payload)) {
+        sendResponse({ ok: false, error: 'invalid payload' });
+        return true;
+      }
       ensureInitialized()
         .then(() => handleLsChanged(message.payload as RawInstruction[]))
         .then(() => sendResponse({ ok: true }))
