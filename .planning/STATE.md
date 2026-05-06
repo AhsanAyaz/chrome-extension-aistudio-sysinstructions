@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 4 verified and complete
-last_updated: "2026-05-06T20:15:00.000Z"
+status: planned
+stopped_at: Phase 5 planned — 6 plans ready
+last_updated: "2026-05-06T20:52:00.000Z"
 last_activity: 2026-05-06
 progress:
   total_phases: 5
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 
 ## Current Position
 
-Phase: 05 (popup-badge-export-import) — NEXT
-Plan: 0 of TBD
-Status: Phase 04 verified — ready to plan Phase 05
+Phase: 05 (popup-badge-export-import) — PLANNED
+Plan: 0 of 6
+Status: 6 plans ready — execute to build popup, badge, export/import
 Last activity: 2026-05-06
 Resume file: --resume-file
 
