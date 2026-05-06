@@ -74,21 +74,33 @@ export async function diffAndAccumulate(payload: RawInstruction[]): Promise<void
   // Hard Rule 4 / PUSH-05: empty payload is a detection failure, never a delete signal.
   if (payload.length === 0) return;
 
-  const registry = await getRegistry();      // chrome.storage.sync
-  const lastPushed = await readLastPushed(); // chrome.storage.local
+  const [registry, lastPushed, existingPending] = await Promise.all([
+    getRegistry(),       // chrome.storage.sync — last committed state
+    readLastPushed(),    // chrome.storage.local — hash snapshot from last flush
+    drainPendingWrite(), // chrome.storage.local — in-flight intent (may be newer than sync)
+  ]);
 
-  // Build reverse lookup: title → uuid for LIVE registry entries only.
+  // Prefer the in-flight pending registry over sync as the base. When multiple
+  // LS_CHANGED events fire in rapid succession (AI Studio autosave intermediate
+  // states), each call builds on the previous call's intent rather than the stale
+  // sync state. This preserves tombstones set by earlier events in the same burst.
+  const pendingRegistry = existingPending
+    ? (existingPending[REGISTRY_KEY] as SyncRegistry | undefined) ?? null
+    : null;
+  const baseRegistry: SyncRegistry = pendingRegistry ?? registry;
+
+  // Build reverse lookup: title → uuid for LIVE base-registry entries only.
   // Tombstoned entries are excluded — a title reappearing after deletion
   // gets a fresh UUID (T-03-02-c: rename = delete + create; accept disposition).
   const titleToUuid = new Map<string, string>();
-  for (const [uuid, rec] of Object.entries(registry)) {
+  for (const [uuid, rec] of Object.entries(baseRegistry)) {
     if (rec.deletedAt === null) {
       titleToUuid.set(rec.title, uuid);
     }
   }
 
   const now = Date.now();
-  const nextRegistry: SyncRegistry = { ...registry };
+  const nextRegistry: SyncRegistry = { ...baseRegistry };
   const bodyWrites: Record<string, string> = {};
   const seenUuids = new Set<string>();
 
@@ -124,7 +136,7 @@ export async function diffAndAccumulate(payload: RawInstruction[]): Promise<void
   // Tombstone items that disappeared from the payload.
   // Only live items (deletedAt === null) absent from the new payload are tombstoned.
   let hasChanges = Object.keys(bodyWrites).length > 0;
-  for (const [uuid, rec] of Object.entries(registry)) {
+  for (const [uuid, rec] of Object.entries(baseRegistry)) {
     if (!seenUuids.has(uuid) && rec.deletedAt === null) {
       nextRegistry[uuid] = { ...rec, deletedAt: now };
       hasChanges = true;

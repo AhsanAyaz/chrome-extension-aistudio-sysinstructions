@@ -321,6 +321,44 @@ describe('persistPendingWrite / drainPendingWrite / clearPendingWrite', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Case 9: Tombstone survives intermediate-state burst (AI Studio autosave race)
+// ---------------------------------------------------------------------------
+describe('Case 9: tombstone survives intermediate-state burst', () => {
+  it('tombstones the old entry when a rename is preceded by a 2-item intermediate payload', async () => {
+    // Simulate: sync has "A" alive from a previous flush.
+    const uuidA = 'uuid-rename-old-000000-0000-000000000001';
+    const registry: SyncRegistry = {
+      [uuidA]: { title: 'A', updatedAt: 100, deletedAt: null, chunks: 1 },
+    };
+    await chrome.storage.sync.set({ [REGISTRY_KEY]: registry });
+
+    // AI Studio fires an intermediate setItem with BOTH old ("A") and new ("B")
+    // entries coexisting briefly during the rename.
+    await diffAndAccumulate([
+      { title: 'A', text: 'old text' },
+      { title: 'B', text: 'new text' },
+    ]);
+
+    // AI Studio then fires the settled final state: only "B" remains.
+    await diffAndAccumulate([{ title: 'B', text: 'new text' }]);
+
+    const r = await chrome.storage.local.get(PENDING_WRITE_KEY);
+    const batch = r[PENDING_WRITE_KEY] as Record<string, unknown>;
+    expect(batch).toBeDefined();
+
+    const nextRegistry = batch[REGISTRY_KEY] as SyncRegistry;
+
+    // "A" must be tombstoned — it is absent from the final payload.
+    expect(nextRegistry[uuidA]?.deletedAt).toBeGreaterThan(0);
+
+    // Exactly one live entry: "B".
+    const live = Object.values(nextRegistry).filter((rec) => rec.deletedAt === null);
+    expect(live).toHaveLength(1);
+    expect(live[0]?.title).toBe('B');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // UUID stability: same title → same UUID across multiple diffAndAccumulate calls
 // ---------------------------------------------------------------------------
 describe('UUID stability', () => {
