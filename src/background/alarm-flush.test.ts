@@ -311,3 +311,36 @@ describe('Case 8: stale body key cleanup when chunk count decreased', () => {
     expect(removeSpy).toHaveBeenCalledWith([staleKey]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Case 9: tombstone body key cleanup
+// ---------------------------------------------------------------------------
+describe('Case 9: body keys removed when item is tombstoned', () => {
+  it('calls sync.remove for all body keys of a newly tombstoned item', async () => {
+    const uuid = 'uuid-alarm-flush-test-tomb-000000001';
+
+    // Old registry in sync has a live item with 1 chunk
+    const oldRegistry: SyncRegistry = {
+      [uuid]: { title: 'Bye', updatedAt: 500, deletedAt: null, chunks: 1 },
+    };
+    await chrome.storage.sync.set({ [REGISTRY_KEY]: oldRegistry });
+
+    // New batch tombstones the item (deletedAt set, chunks unchanged)
+    const newRegistry: SyncRegistry = {
+      [uuid]: { title: 'Bye', updatedAt: 500, deletedAt: 1000, chunks: 1 },
+    };
+    const batch: Record<string, unknown> = {
+      [REGISTRY_KEY]: newRegistry,
+    };
+
+    await chrome.storage.local.set({ [PENDING_WRITE_KEY]: batch });
+
+    const removeSpy = vi.spyOn(chrome.storage.sync, 'remove');
+
+    await flushPendingWrite();
+
+    // sync.remove should be called with the body key for the tombstoned item
+    const bodyKey = `${BODY_KEY_PREFIX}${uuid}:c0`;
+    expect(removeSpy).toHaveBeenCalledWith([bodyKey]);
+  });
+});

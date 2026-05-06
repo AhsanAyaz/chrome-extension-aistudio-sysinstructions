@@ -119,7 +119,14 @@ async function removeStaleBodyKeys(batch: Record<string, unknown>): Promise<void
   const stale: string[] = [];
   for (const [uuid, newRec] of Object.entries(registry)) {
     const oldRec = oldRegistry[uuid];
-    if (oldRec !== undefined && oldRec.chunks > newRec.chunks) {
+    if (newRec.deletedAt !== null && (oldRec === undefined || oldRec.deletedAt === null)) {
+      // Newly tombstoned: remove all body keys for this uuid.
+      const chunkCount = oldRec?.chunks ?? newRec.chunks;
+      for (let i = 0; i < chunkCount; i++) {
+        stale.push(`${BODY_KEY_PREFIX}${uuid}:c${i}`);
+      }
+    } else if (oldRec !== undefined && oldRec.chunks > newRec.chunks) {
+      // Chunk count decreased: remove orphaned tail chunks.
       for (let i = newRec.chunks; i < oldRec.chunks; i++) {
         stale.push(`${BODY_KEY_PREFIX}${uuid}:c${i}`);
       }
