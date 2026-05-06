@@ -7,11 +7,22 @@ import { _resetForTesting } from './index';
 import { SYNC_STATUS_KEY } from './sync-state';
 import type { SyncStatus } from '../shared/types';
 
+// fakeBrowser does not implement chrome.identity — define stub on global before each test.
+// Each test that needs a specific return value overrides getProfileUserInfo via the stub.
+const identityStub = {
+  getProfileUserInfo: vi.fn().mockResolvedValue({ email: '', id: '' }),
+};
+
 beforeEach(() => {
   fakeBrowser.reset();
   _resetForTesting();
   vi.spyOn(chrome.action, 'setBadgeText').mockResolvedValue(undefined);
   vi.spyOn(chrome.action, 'setBadgeBackgroundColor').mockResolvedValue(undefined);
+  // Install chrome.identity stub (not provided by fakeBrowser)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis as any).chrome = { ...(globalThis as any).chrome, identity: identityStub };
+  identityStub.getProfileUserInfo.mockReset();
+  identityStub.getProfileUserInfo.mockResolvedValue({ email: '', id: '' });
 });
 
 describe('extractPageEmail', () => {
@@ -49,20 +60,14 @@ describe('checkAccountMismatch', () => {
   });
 
   it('returns false when chrome.identity returns empty email (identity unavailable)', async () => {
-    vi.spyOn(chrome.identity, 'getProfileUserInfo').mockResolvedValue({
-      email: '',
-      id: '',
-    });
+    // identityStub default returns { email: '', id: '' } — no override needed
     const { checkAccountMismatch } = await import('./account-preflight');
     const result = await checkAccountMismatch('user@example.com');
     expect(result).toBe(false);
   });
 
   it('returns true and sets ACCOUNT_MISMATCH when emails differ', async () => {
-    vi.spyOn(chrome.identity, 'getProfileUserInfo').mockResolvedValue({
-      email: 'chrome@example.com',
-      id: 'abc123',
-    });
+    identityStub.getProfileUserInfo.mockResolvedValue({ email: 'chrome@example.com', id: 'abc123' });
     const { checkAccountMismatch } = await import('./account-preflight');
     const result = await checkAccountMismatch('page@example.com');
     expect(result).toBe(true);
@@ -78,10 +83,7 @@ describe('checkAccountMismatch', () => {
     await chrome.storage.local.set({
       [SYNC_STATUS_KEY]: { state: 'error', lastSyncAt: 0, errorState: 'ACCOUNT_MISMATCH' } satisfies SyncStatus,
     });
-    vi.spyOn(chrome.identity, 'getProfileUserInfo').mockResolvedValue({
-      email: 'same@example.com',
-      id: 'xyz',
-    });
+    identityStub.getProfileUserInfo.mockResolvedValue({ email: 'same@example.com', id: 'xyz' });
     const { checkAccountMismatch } = await import('./account-preflight');
     const result = await checkAccountMismatch('same@example.com');
     expect(result).toBe(false);

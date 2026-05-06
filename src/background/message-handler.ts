@@ -1,6 +1,7 @@
 import type { RawInstruction } from '../shared/types';
 import { diffAndAccumulate } from './push-engine';
 import { scheduleFlush } from './alarm-flush';
+import { checkAccountMismatch } from './account-preflight';
 
 // Serialization lock: ensures concurrent LS_CHANGED messages are processed
 // one at a time. AI Studio fires multiple setItem calls during a single edit
@@ -17,6 +18,12 @@ let diffQueue: Promise<void> = Promise.resolve();
  * Security: log UUID count only — never log .text content (RESEARCH security domain).
  */
 export async function handleLsChanged(payload: RawInstruction[], pageEmail?: string): Promise<void> {
+  // Phase 4 BOOT-03: account mismatch pre-flight.
+  // Content script sends pageEmail scraped from AI Studio DOM (optional).
+  // If mismatch detected, setErrorState is called inside checkAccountMismatch and we abort.
+  const isMismatch = await checkAccountMismatch(pageEmail);
+  if (isMismatch) return;
+
   console.log('[sysins] push: received', payload.length, 'item(s)');
   // Chain onto the existing queue so each diff runs after the previous one
   // completes — prevents intermediate AI Studio states from overwriting
