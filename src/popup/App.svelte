@@ -170,6 +170,17 @@
     />
   {/if}
   {#if importMessage && syncStatus.state !== 'error'}
-    <div class="import-message">{importMessage}</div>
+    <div class="import-toast">{importMessage}</div>
   {/if}
 </div>
+
+<style>
+  .import-toast {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    padding: 7px 14px 8px;
+    border-top: 1px solid var(--border);
+    letter-spacing: 0.01em;
+  }
+</style>

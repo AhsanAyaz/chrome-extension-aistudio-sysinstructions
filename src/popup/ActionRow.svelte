@@ -1,5 +1,4 @@
 <script lang="ts">
-  // Svelte 5 props — callbacks passed from App.svelte (D-04 fire-and-forget)
   let { pushNow, pullNow, isSyncing }: {
     pushNow: () => void;
     pullNow: () => void;
@@ -7,68 +6,69 @@
   } = $props();
 </script>
 
-<!-- UI-SPEC: Push Now (accent fill) + Pull Now (outlined) — side by side, 36px min height -->
 <div class="action-row">
-  <button
-    class="btn btn-primary"
-    onclick={pushNow}
-    disabled={isSyncing}
-  >
+  <button class="btn btn-push" onclick={pushNow} disabled={isSyncing}>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 9V3M3.5 5.5L6 3l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
     Push Now
   </button>
-  <button
-    class="btn btn-secondary"
-    onclick={pullNow}
-    disabled={isSyncing}
-  >
+  <button class="btn btn-pull" onclick={pullNow} disabled={isSyncing}>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 3v6M3.5 6.5L6 9l2.5-2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
     Pull Now
   </button>
 </div>
 
 <style>
-  /* UI-SPEC Action row layout */
   .action-row {
     display: flex;
-    gap: 8px; /* 2 × 4px gap = 8px total between buttons */
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
   }
 
   .btn {
     flex: 1;
-    height: 36px;       /* UI-SPEC minimum 36px touch target */
-    min-height: 36px;
+    height: 34px;
     border-radius: 6px;
-    font-size: 13px;
-    font-weight: 400;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--sans);
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: background var(--t), box-shadow var(--t), opacity var(--t), color var(--t);
+    letter-spacing: 0.01em;
+  }
+
+  .btn-push {
+    background: var(--accent);
+    color: #0a1628;
     border: none;
-    transition: opacity 0.15s;
   }
 
-  /* UI-SPEC: Push Now — accent #1A73E8 fill, white text */
-  .btn-primary {
-    background: #1a73e8;
-    color: #ffffff;
-    border: none;
+  .btn-push:hover:not(:disabled) {
+    background: #60cbfa;
+    box-shadow: 0 0 12px var(--accent-glow);
   }
 
-  .btn-primary:hover:not(:disabled) {
-    background: #1558b0;
+  .btn-pull {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid rgba(56, 189, 248, 0.35);
   }
 
-  /* UI-SPEC: Pull Now — outlined, #FFFFFF bg, #111827 text, 1px #E5E7EB border */
-  .btn-secondary {
-    background: #ffffff;
-    color: #111827;
-    border: 1px solid #e5e7eb;
+  .btn-pull:hover:not(:disabled) {
+    background: var(--accent-dim);
+    border-color: var(--accent);
   }
 
-  .btn-secondary:hover:not(:disabled) {
-    background: #f3f4f6;
-  }
-
-  /* UI-SPEC disabled state during sync: opacity 0.5, cursor not-allowed */
   .btn:disabled {
-    opacity: 0.5;
+    opacity: 0.38;
     cursor: not-allowed;
     pointer-events: none;
   }

@@ -7,7 +7,6 @@
     dismissHint: () => void;
   } = $props();
 
-  // UI-SPEC Error State Copy — all 9 ErrorState values covered
   const ERROR_COPY: Record<ErrorState, string> = {
     QUOTA_EXCEEDED: 'Sync storage is full. Delete unused instructions to free space.',
     RATE_LIMITED: 'Sync rate limit hit. Will retry automatically in 1 minute.',
@@ -20,80 +19,91 @@
     PENDING_MERGE_OVERFLOW: 'Too many remote changes queued. Some older changes were skipped to prevent data loss.',
   };
 
-  // Derived: which banner to show
   let isError = $derived(syncStatus.state === 'error' && !!syncStatus.errorState);
   let errorCopy = $derived(
     isError && syncStatus.errorState ? ERROR_COPY[syncStatus.errorState] : ''
   );
 </script>
 
-<!-- UI-SPEC Error/Hint Banner section -->
 {#if isError}
-  <!-- Error banner: red border + tint -->
   <div class="banner banner-error">
+    <svg class="banner-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="6.5" cy="6.5" r="5.5" stroke="var(--error)" stroke-width="1.2"/>
+      <path d="M6.5 4v3" stroke="var(--error)" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="6.5" cy="9" r="0.65" fill="var(--error)"/>
+    </svg>
     <span class="banner-text">{errorCopy}</span>
   </div>
 {:else if showRefreshHint}
-  <!-- Refresh hint (PULL-03): amber border + tint, dismissable -->
-  <!-- UI-SPEC: "Pull applied — refresh AI Studio to see changes." -->
   <div class="banner banner-hint">
+    <svg class="banner-icon" width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="6.5" cy="6.5" r="5.5" stroke="var(--warn)" stroke-width="1.2"/>
+      <path d="M6.5 4v3" stroke="var(--warn)" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="6.5" cy="9" r="0.65" fill="var(--warn)"/>
+    </svg>
     <span class="banner-text">Pull applied — refresh AI Studio to see changes.</span>
-    <button class="dismiss-btn" onclick={dismissHint} aria-label="Dismiss">×</button>
+    <button class="dismiss-btn" onclick={dismissHint} aria-label="Dismiss">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1.5 1.5l6 6M7.5 1.5l-6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </button>
   </div>
 {/if}
 
 <style>
-  /* UI-SPEC Banner: 100% width, 8px padding, 1px border */
   .banner {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
     gap: 8px;
-    padding: 8px;
-    border-radius: 4px;
-    width: 100%;
-    word-break: break-word;
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
   }
 
-  /* UI-SPEC: Error — 1px solid #EF4444, #FEF2F2 tint */
   .banner-error {
-    border: 1px solid #ef4444;
-    background: #fef2f2;
+    border-left: 3px solid var(--error);
+    background: var(--error-bg);
+    padding-left: 11px;
   }
 
-  /* UI-SPEC: Hint — 1px solid #F59E0B, #FFFBEB tint */
   .banner-hint {
-    border: 1px solid #f59e0b;
-    background: #fffbeb;
+    border-left: 3px solid var(--warn);
+    background: var(--warn-bg);
+    padding-left: 11px;
+  }
+
+  .banner-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
   }
 
   .banner-text {
-    font-size: 11px;
-    font-weight: 400;
-    color: #111827;
-    line-height: 1.4;
+    font-size: 12.5px;
+    color: var(--text);
+    line-height: 1.5;
     flex: 1;
+    opacity: 0.9;
   }
 
-  /* UI-SPEC: Dismiss button 20×20px, positioned top-right */
   .dismiss-btn {
-    width: 20px;
-    height: 20px;
-    min-width: 20px;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
     border: none;
     background: transparent;
     cursor: pointer;
-    font-size: 14px;
-    color: #6b7280;
+    color: var(--muted);
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 2px;
+    border-radius: 3px;
     flex-shrink: 0;
+    margin-top: 1px;
+    transition: color var(--t), background var(--t);
   }
 
   .dismiss-btn:hover {
-    background: rgba(0, 0, 0, 0.05);
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
   }
 </style>
