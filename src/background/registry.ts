@@ -149,11 +149,13 @@ export async function deleteItem(uuid: string): Promise<void> {
 export async function applyRemote(remote: SyncRegistry): Promise<void> {
   const local = await getRegistry();
   const merged: SyncRegistry = { ...local };
+  let changed = false;
 
   for (const [uuid, remoteRec] of Object.entries(remote)) {
     const localRec = merged[uuid];
     if (localRec === undefined) {
       merged[uuid] = remoteRec;
+      changed = true;
       continue;
     }
 
@@ -170,17 +172,23 @@ export async function applyRemote(remote: SyncRegistry): Promise<void> {
 
     if (remoteAuthority > localAuthority) {
       merged[uuid] = remoteRec;
+      changed = true;
     } else if (remoteAuthority === localAuthority) {
       // Tie: tombstone wins per D-06 / D-18.
       if (remoteTomb !== null && localTomb === null) {
         merged[uuid] = remoteRec;
+        changed = true;
       }
       // else: local stays (either both tombstoned, or both alive and equal)
     }
     // else: local has newer authority — keep local
   }
 
-  await chrome.storage.sync.set({ [REGISTRY_KEY]: merged });
+  // Only write to sync when merge produced a change — prevents a spurious
+  // onChanged re-fire when the pull engine receives its own push (D-04 guard).
+  if (changed) {
+    await chrome.storage.sync.set({ [REGISTRY_KEY]: merged });
+  }
 }
 
 /**
