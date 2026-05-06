@@ -13,7 +13,7 @@ This extension is a sync bridge: it lifts AI Studio's per-device localStorage in
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Storage schema, identity model, project scaffold, and distribution hygiene — the irreversible decisions locked before any real user data is written
-- [ ] **Phase 2: Observation Pipeline** - MAIN-world injector + content script relay — proves AI Studio writes are detected before any sync logic exists
+- [x] **Phase 2: Observation Pipeline** - MAIN-world injector + content script relay — proves AI Studio writes are detected before any sync logic exists
 - [ ] **Phase 3: Push Engine** - Service worker push path (localStorage → chrome.storage.sync) with UUID assignment, merge diff, chunking, and debounced batched writes
 - [ ] **Phase 4: Pull Engine + Bootstrap** - Bidirectional sync complete: pull path, infinite-loop guard, multi-tab coordination, account mismatch pre-flight, and first-install union merge
 - [ ] **Phase 5: Popup, Badge, and Export/Import** - User-visible surface over a proven sync engine: status, instruction list, Push/Pull buttons, error states, JSON export/import
@@ -48,9 +48,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A `null` or empty-array read from `localStorage` (simulated by clearing the key in DevTools) does NOT trigger a `LS_CHANGED` message; the null-read guard absorbs it silently
   4. Unknown fields on instruction items (fields beyond `title` and `text`) are forwarded to the service worker verbatim — no field stripping occurs in the content script
 **Plans**: 3 plans
-  - [ ] 02-01-PLAN.md — Shared primitives: `RawInstruction`/`LastObservedSnapshot` types, `LAST_OBSERVED_KEY`/`WATCHED_LS_KEY` constants, `isValidPayload` guard + 6 unit tests (Wave 1)
-  - [ ] 02-02-PLAN.md — SW message handler: `message-handler.ts` + `message-handler.test.ts` (3 fakeBrowser tests), `onMessage` listener wired in `index.ts` (Wave 2, parallel with 02-03)
-  - [ ] 02-03-PLAN.md — Observation pipeline files: `ls-observer.js` injector, `content/index.ts` relay, `wxt.config.ts` web_accessible_resources, DevTools checkpoint (Wave 2, parallel with 02-02)
+  - [x] 02-01-PLAN.md — Shared primitives: `RawInstruction`/`LastObservedSnapshot` types, `LAST_OBSERVED_KEY`/`WATCHED_LS_KEY` constants, `isValidPayload` guard + 6 unit tests (Wave 1)
+  - [x] 02-02-PLAN.md — SW message handler: `message-handler.ts` + `message-handler.test.ts` (3 fakeBrowser tests), `onMessage` listener wired in `index.ts` (Wave 2, parallel with 02-03)
+  - [x] 02-03-PLAN.md — Observation pipeline files: `ls-observer.js` injector, `content/index.ts` relay, `wxt.config.ts` web_accessible_resources, DevTools checkpoint (Wave 2, parallel with 02-02)
 
 ### Phase 3: Push Engine
 **Goal**: Edits made in AI Studio on one device land correctly in `chrome.storage.sync` with per-item UUIDs, timestamps, and quota-respecting batched writes
@@ -99,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-05-05 |
-| 2. Observation Pipeline | 0/3 | Not started | - |
+| 2. Observation Pipeline | 3/3 | Complete | 2026-05-06 |
 | 3. Push Engine | 0/TBD | Not started | - |
 | 4. Pull Engine + Bootstrap | 0/TBD | Not started | - |
 | 5. Popup, Badge, and Export/Import | 0/TBD | Not started | - |

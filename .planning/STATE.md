@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: "Completed 02-02: SW onMessage stub and lastObserved snapshot"
-last_updated: "2026-05-05T23:38:29.673Z"
-last_activity: 2026-05-05 -- Phase --phase execution started
+status: phase-complete
+stopped_at: "Completed 02-03: MAIN-world injector, relay content script, web_accessible_resources — Phase 2 complete"
+last_updated: "2026-05-06T00:00:00.000Z"
+last_activity: 2026-05-06 — Phase 02 observation-pipeline completed (all 3 plans)
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
-  completed_plans: 8
-  percent: 89
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Open AI Studio on any signed-in Chrome and see the same up-to-date library of system instructions — automatically, with no clicks.
-**Current focus:** Phase --phase — 02
+**Current focus:** Phase 03 — Push Engine (next)
 
 ## Current Position
 
-Phase: --phase (02) — EXECUTING
-Plan: 1 of --name
-Status: Executing Phase --phase
-Last activity: 2026-05-05 -- Phase --phase execution started
+Phase: 02 (observation-pipeline) — COMPLETE
+Plan: 3 of 3
+Status: Phase 2 complete — ready for Phase 3 (Push Engine)
+Last activity: 2026-05-06 — Phase 02 all 3 plans executed; DevTools checkpoint approved
 Resume file: None
 
-Progress: [█████████░] 89%
+Progress: [██████████] 100% (Phase 2 complete)
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [█████████░] 89%
 | Phase 01-foundation P06 | 4 | 2 tasks | 3 files |
 | Phase 02-observation-pipeline P01 | 102 | 2 tasks | 4 files |
 | Phase 02-observation-pipeline P02 | 2 | 2 tasks | 3 files |
+| Phase 02-observation-pipeline P03 | 8 | 1 task | 4 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,11 @@ Recent decisions affecting current work:
 - LAST_OBSERVED_KEY uses string literal form not template literal — matches META_KEY style; value visible at a glance
 - OQ-3 resolved: return true + sendResponse({ ok }) pattern chosen for async onMessage handler — closes port cleanly, no console warnings
 - D-03 enforcement: ensureInitialized chained before handleLsChanged on every LS_CHANGED SW wake
+- public/injected/ is authoritative for MAIN-world .js files — WXT entrypoints scanner is TS-only; plain .js must live in public/ to be copied to build output (WXT-STATIC pattern)
+- injectScript + web_accessible_resources approach used (not world: MAIN on content script) — correct WXT v0.20 MAIN-world injection pattern
+- Polling uses setInterval at 2000ms — simpler than requestIdleCallback, correct for v1 belt-and-suspenders fallback
+- keepInDom: false removes injected <script> tag; Storage.prototype patch survives as JS closure (Pitfall 5)
+- Phase 2 observation pipeline complete and verified end-to-end in Chrome DevTools (all 4 success criteria confirmed)
 
 ### Pending Todos
 
@@ -108,8 +114,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-05T23:38:29.670Z
-Stopped at: Completed 02-02: SW onMessage stub and lastObserved snapshot
+Last session: 2026-05-06T00:00:00.000Z
+Stopped at: Completed 02-03: MAIN-world injector, relay content script, web_accessible_resources — Phase 2 complete
 Resume file: None
 
-**Planned Phase:** 02 (observation-pipeline) — 3 plans — 2026-05-05T23:09:21.373Z
+**Planned Phase:** 03 (push-engine) — TBD plans — next phase to execute
