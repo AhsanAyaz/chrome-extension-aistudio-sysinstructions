@@ -27,6 +27,10 @@ import type { SyncRegistry, SyncStatus } from '../shared/types';
 beforeEach(() => {
   fakeBrowser.reset();
   vi.restoreAllMocks();
+  // fakeBrowser does not implement chrome.action.setBadgeText / setBadgeBackgroundColor.
+  // Stub them globally so they don't throw "not implemented" in any test.
+  vi.spyOn(chrome.action, 'setBadgeText').mockResolvedValue(undefined);
+  vi.spyOn(chrome.action, 'setBadgeBackgroundColor').mockResolvedValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -63,7 +67,7 @@ describe('Case 2: scheduleFlush debounce — 5 calls → 1 alarm', () => {
 
     // fakeBrowser.alarms.getAll() should show only one alarm named sysins-flush
     const allAlarms = await fakeBrowser.alarms.getAll();
-    const flushAlarms = allAlarms.filter((a) => a.name === FLUSH_ALARM_NAME);
+    const flushAlarms = allAlarms.filter((a: chrome.alarms.Alarm) => a.name === FLUSH_ALARM_NAME);
     expect(flushAlarms).toHaveLength(1);
   });
 });
@@ -118,8 +122,9 @@ describe('Case 4: flushPendingWrite — success path', () => {
 
     const setSpy = vi.spyOn(chrome.storage.sync, 'set');
 
-    // Trigger via alarm event (fakeBrowser alarm trigger pattern)
-    await fakeBrowser.alarms.onAlarm.trigger({ name: FLUSH_ALARM_NAME, scheduledTime: Date.now() });
+    // flushPendingWrite is exported directly; the onAlarm listener binding is done in
+    // index.ts (Plan 04). Call the function directly to test its behaviour in isolation.
+    await flushPendingWrite();
 
     // a. sync.set called once with the full batch
     expect(setSpy).toHaveBeenCalledOnce();
