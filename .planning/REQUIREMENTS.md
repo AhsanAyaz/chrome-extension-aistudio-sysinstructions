@@ -60,17 +60,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Popup UI
 
-- [ ] **UI-01**: The toolbar icon opens a popup that shows the last successful sync timestamp, current sync state (idle / syncing / error), and a count of synced instructions.
-- [ ] **UI-02**: The popup lists every instruction with its title and per-item `updated_at` timestamp; the list reflects the merged state, not the raw localStorage view.
-- [ ] **UI-03**: The popup exposes a "Push now" button that flushes pending writes immediately, bypassing the debounce.
-- [ ] **UI-04**: The popup exposes a "Pull now" button that forces a fresh read from `chrome.storage.sync` and re-applies the merged result.
-- [ ] **UI-05**: The popup shows an explicit error state (badge color + human-readable message) for: quota exceeded, sync unavailable, account mismatch, malformed remote payload — no error is silently swallowed.
-- [ ] **UI-06**: The toolbar badge reflects sync health at a glance: green = healthy, amber = needs attention (e.g. refresh hint, pending writes), red = error.
+- [x] **UI-01**: The toolbar icon opens a popup that shows the last successful sync timestamp, current sync state (idle / syncing / error), and a count of synced instructions.
+- [x] **UI-02**: The popup lists every instruction with its title and per-item `updated_at` timestamp; the list reflects the merged state, not the raw localStorage view.
+- [x] **UI-03**: The popup exposes a "Push now" button that flushes pending writes immediately, bypassing the debounce.
+- [x] **UI-04**: The popup exposes a "Pull now" button that forces a fresh read from `chrome.storage.sync` and re-applies the merged result.
+- [x] **UI-05**: The popup shows an explicit error state (badge color + human-readable message) for: quota exceeded, sync unavailable, account mismatch, malformed remote payload — no error is silently swallowed.
+- [x] **UI-06**: The toolbar badge reflects sync health at a glance: green = healthy, amber = needs attention (e.g. refresh hint, pending writes), red = error.
 
 ### Export / Import
 
-- [ ] **EXPORT-01**: The popup provides a "Export to JSON" action that produces a single human-readable JSON file containing every instruction (title, text, UUID, `updated_at`).
-- [ ] **EXPORT-02**: The popup provides an "Import from JSON" action that ingests a previously exported file and routes every item through the standard merge path — imported items get UUIDs assigned, conflicts resolve via last-write-wins, tombstones are respected.
+- [x] **EXPORT-01**: The popup provides a "Export to JSON" action that produces a single human-readable JSON file containing every instruction (title, text, UUID, `updated_at`).
+- [x] **EXPORT-02**: The popup provides an "Import from JSON" action that ingests a previously exported file and routes every item through the standard merge path — imported items get UUIDs assigned, conflicts resolve via last-write-wins, tombstones are respected.
 
 ### Distribution & Hygiene
 
@@ -141,14 +141,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOOT-01 | Phase 4 | Pending |
 | BOOT-02 | Phase 4 | Pending |
 | BOOT-03 | Phase 4 | Pending |
-| UI-01 | Phase 5 | Pending |
-| UI-02 | Phase 5 | Pending |
-| UI-03 | Phase 5 | Pending |
-| UI-04 | Phase 5 | Pending |
-| UI-05 | Phase 5 | Pending |
-| UI-06 | Phase 5 | Pending |
-| EXPORT-01 | Phase 5 | Pending |
-| EXPORT-02 | Phase 5 | Pending |
+| UI-01 | Phase 5 | Complete (05-02, 05-03) |
+| UI-02 | Phase 5 | Complete (05-03) |
+| UI-03 | Phase 5 | Complete (05-04, 05-05) |
+| UI-04 | Phase 5 | Complete (05-04, 05-05) |
+| UI-05 | Phase 5 | Complete (05-04) |
+| UI-06 | Phase 5 | Complete (05-05) |
+| EXPORT-01 | Phase 5 | Complete (05-02) |
+| EXPORT-02 | Phase 5 | Complete (05-02, 05-05) |
 | DIST-01 | Phase 1 | Complete (01-01) |
 | DIST-02 | Phase 1 | Complete (01-01, 01-06) |
 | DIST-03 | Phase 1 | Complete (01-01) |

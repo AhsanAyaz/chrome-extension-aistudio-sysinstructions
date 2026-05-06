@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Observation Pipeline** - MAIN-world injector + content script relay — proves AI Studio writes are detected before any sync logic exists
 - [x] **Phase 3: Push Engine** - Service worker push path (localStorage → chrome.storage.sync) with UUID assignment, merge diff, chunking, and debounced batched writes
 - [x] **Phase 4: Pull Engine + Bootstrap** - Bidirectional sync complete: pull path, infinite-loop guard, multi-tab coordination, account mismatch pre-flight, and first-install union merge
-- [ ] **Phase 5: Popup, Badge, and Export/Import** - User-visible surface over a proven sync engine: status, instruction list, Push/Pull buttons, error states, JSON export/import
+- [x] **Phase 5: Popup, Badge, and Export/Import** - User-visible surface over a proven sync engine: status, instruction list, Push/Pull buttons, error states, JSON export/import
 
 ## Phase Details
 
@@ -101,12 +101,12 @@ Plans:
   5. Clicking "Export to JSON" downloads a human-readable JSON file containing every instruction with title, text, UUID, and `updated_at`; clicking "Import from JSON" ingests a previously exported file, routes every item through the merge path, and the imported instructions appear in AI Studio within 35 seconds
 **Plans**: 6 plans
 Plans:
-- [ ] 05-01-PLAN.md — Install svelte@5.55.5 + @wxt-dev/module-svelte@2.0.5; add modules: ['@wxt-dev/module-svelte'] to wxt.config.ts (D-11) (Wave 1)
-- [ ] 05-02-PLAN.md — Popup scaffold: index.html, main.ts, App.svelte (state/onMount/actions/export/import), popup.css (Wave 2)
-- [ ] 05-03-PLAN.md — Display sub-components: relativeTime.ts, StatusHeader.svelte, InstructionList.svelte (Wave 2, parallel with 05-02 and 05-04)
-- [ ] 05-04-PLAN.md — Action sub-components: ActionRow.svelte, ExportImportRow.svelte, BannerRow.svelte + ERROR_COPY (Wave 2, parallel with 05-02 and 05-03)
-- [ ] 05-05-PLAN.md — SW wiring: PUSH_NOW, PULL_NOW, IMPORT_ITEMS handlers in index.ts; badge clear on pull success (Wave 3)
-- [ ] 05-06-PLAN.md — DevTools end-to-end checkpoint: all 5 phase success criteria verified in real Chrome (Wave 4, autonomous: false)
+- [x] 05-01-PLAN.md — Install svelte@5.55.5 + @wxt-dev/module-svelte@2.0.5; add modules: ['@wxt-dev/module-svelte'] to wxt.config.ts (D-11) (Wave 1)
+- [x] 05-02-PLAN.md — Popup scaffold: index.html, main.ts, App.svelte (state/onMount/actions/export/import), popup.css (Wave 2)
+- [x] 05-03-PLAN.md — Display sub-components: relativeTime.ts, StatusHeader.svelte, InstructionList.svelte (Wave 2, parallel with 05-02 and 05-04)
+- [x] 05-04-PLAN.md — Action sub-components: ActionRow.svelte, ExportImportRow.svelte, BannerRow.svelte + ERROR_COPY (Wave 2, parallel with 05-02 and 05-03)
+- [x] 05-05-PLAN.md — SW wiring: PUSH_NOW, PULL_NOW, IMPORT_ITEMS handlers in index.ts; badge clear on pull success (Wave 3)
+- [x] 05-06-PLAN.md — DevTools end-to-end checkpoint: all 5 phase success criteria verified in real Chrome (Wave 4, autonomous: false)
 
 ## Progress
 
@@ -119,4 +119,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Observation Pipeline | 3/3 | Complete | 2026-05-06 |
 | 3. Push Engine | 5/5 | Complete | 2026-05-06 |
 | 4. Pull Engine + Bootstrap | 6/6 | Complete | 2026-05-06 |
-| 5. Popup, Badge, and Export/Import | 0/6 | Not started | - |
+| 5. Popup, Badge, and Export/Import | 6/6 | Complete | 2026-05-06 |
