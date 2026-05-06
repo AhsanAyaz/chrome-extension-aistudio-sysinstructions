@@ -10,6 +10,7 @@ export default defineConfig({
     version: '0.1.0',
     minimum_chrome_version: '116',
     permissions: ['storage', 'scripting', 'alarms'],
+    action: {}, // required for chrome.action API (setBadgeText, setBadgeBackgroundColor) in service worker
     host_permissions: ['https://aistudio.google.com/*'],
     // No <all_urls>, no identity, no tabs, no notifications. Matches D-19 verbatim.
     web_accessible_resources: [
