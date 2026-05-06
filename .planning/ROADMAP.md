@@ -14,8 +14,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Storage schema, identity model, project scaffold, and distribution hygiene — the irreversible decisions locked before any real user data is written
 - [x] **Phase 2: Observation Pipeline** - MAIN-world injector + content script relay — proves AI Studio writes are detected before any sync logic exists
-- [ ] **Phase 3: Push Engine** - Service worker push path (localStorage → chrome.storage.sync) with UUID assignment, merge diff, chunking, and debounced batched writes
-- [ ] **Phase 4: Pull Engine + Bootstrap** - Bidirectional sync complete: pull path, infinite-loop guard, multi-tab coordination, account mismatch pre-flight, and first-install union merge
+- [x] **Phase 3: Push Engine** - Service worker push path (localStorage → chrome.storage.sync) with UUID assignment, merge diff, chunking, and debounced batched writes
+- [x] **Phase 4: Pull Engine + Bootstrap** - Bidirectional sync complete: pull path, infinite-loop guard, multi-tab coordination, account mismatch pre-flight, and first-install union merge
 - [ ] **Phase 5: Popup, Badge, and Export/Import** - User-visible surface over a proven sync engine: status, instruction list, Push/Pull buttons, error states, JSON export/import
 
 ## Phase Details
@@ -82,12 +82,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   6. (Research-gated) If the Chrome profile email differs from the AI Studio account shown on the page, auto-sync is paused and the popup surface shows a human-readable account-mismatch warning — auto-sync does not run silently across mismatched accounts
 **Plans**: 6 plans
 Plans:
-- [ ] 04-01-PLAN.md — BOOT-03 spike: confirm identity.email behavior + AI Studio DOM selector for signed-in account (Wave 0, autonomous: false)
+- [x] 04-01-PLAN.md — BOOT-03 spike: confirm identity.email behavior + AI Studio DOM selector for signed-in account (Wave 0, autonomous: false)
 - [x] 04-02-PLAN.md — Shared constants + types: BOOTSTRAP_NEEDED_KEY, PENDING_REMOTE_KEY, ApplyRemoteMessage, BootstrapMessage, PendingRemoteState, BootstrapNeededFlag (Wave 1)
-- [ ] 04-03-PLAN.md — pull-engine.ts TDD: handleRemoteChanged, deliverToTab, lastPushed update (Wave 2, parallel with 04-04)
-- [ ] 04-04-PLAN.md — bootstrap.ts TDD: handleLsBootstrap, union merge, title-match UUID assignment, BOOT-01/BOOT-02 (Wave 2, parallel with 04-03)
-- [ ] 04-05-PLAN.md — Wire: SW index.ts onChanged+onInstalled+LS_BOOTSTRAP, content/index.ts APPLY_REMOTE+bootstrap+visibilitychange, account-preflight.ts, identity.email permission (Wave 3)
-- [ ] 04-06-PLAN.md — DevTools end-to-end checkpoint: all 6 phase success criteria verified in real Chrome (Wave 4, autonomous: false)
+- [x] 04-03-PLAN.md — pull-engine.ts TDD: handleRemoteChanged, deliverToTab, lastPushed update (Wave 2, parallel with 04-04)
+- [x] 04-04-PLAN.md — bootstrap.ts TDD: handleLsBootstrap, union merge, title-match UUID assignment, BOOT-01/BOOT-02 (Wave 2, parallel with 04-03)
+- [x] 04-05-PLAN.md — Wire: SW index.ts onChanged+onInstalled+LS_BOOTSTRAP, content/index.ts APPLY_REMOTE+bootstrap+visibilitychange, account-preflight.ts, identity.email permission (Wave 3)
+- [x] 04-06-PLAN.md — DevTools end-to-end checkpoint: all 6 phase success criteria verified in real Chrome (Wave 4, autonomous: false)
 
 ### Phase 5: Popup, Badge, and Export/Import
 **Goal**: The user has full visibility into sync state and manual escape hatches through a thin popup over the proven sync engine
@@ -112,5 +112,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation | 6/6 | Complete | 2026-05-05 |
 | 2. Observation Pipeline | 3/3 | Complete | 2026-05-06 |
 | 3. Push Engine | 5/5 | Complete | 2026-05-06 |
-| 4. Pull Engine + Bootstrap | 1/6 | In progress | - |
+| 4. Pull Engine + Bootstrap | 6/6 | Complete | 2026-05-06 |
 | 5. Popup, Badge, and Export/Import | 0/TBD | Not started | - |
