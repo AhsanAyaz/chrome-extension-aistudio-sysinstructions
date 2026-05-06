@@ -1,0 +1,41 @@
+/* AI Studio Sync — Popup styles */
+/* UI-SPEC: 360px width, max 540px height, 16px shell padding */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 360px;
+  min-height: 200px;
+  max-height: 540px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #111827;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.popup {
+  width: 360px;
+  max-height: 540px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* Section spacing (md = 16px between major sections) */
+.popup > * + * {
+  margin-top: 16px;
+}
+
+.import-message {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 8px;
+  word-break: break-word;
+}
