@@ -93,12 +93,26 @@ export interface ApplyRemoteMessage {
   payload: RawInstruction[]; // merged live array (tombstoned items excluded)
 }
 
+// Phase 2/4 message type — content script → SW (LS_CHANGED)
+// Sent whenever AI Studio writes to localStorage (via injector postMessage or polling fallback).
+// Phase 4 adds pageEmail for BOOT-03 account mismatch pre-flight.
+export interface LsChangedMessage {
+  type: 'LS_CHANGED';
+  payload: RawInstruction[];
+  /** Email scraped from AI Studio DOM by content script (BOOT-03).
+   *  Optional — SW skips account mismatch check when absent or empty. */
+  pageEmail?: string;
+}
+
 // Phase 4 message types — content script → SW (LS_BOOTSTRAP)
 // Sent on first page load when BOOTSTRAP_NEEDED_KEY is present in chrome.storage.local.
 // Payload is the raw localStorage snapshot read by the content script.
 export interface BootstrapMessage {
   type: 'LS_BOOTSTRAP';
   payload: RawInstruction[]; // raw localStorage snapshot from content script
+  /** Email scraped from AI Studio DOM by content script (BOOT-03).
+   *  Optional — SW skips account mismatch check when absent or empty. */
+  pageEmail?: string;
 }
 
 // sysins:local:pendingRemote — D-08
