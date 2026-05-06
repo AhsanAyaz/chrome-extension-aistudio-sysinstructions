@@ -61,7 +61,7 @@ describe('applyRemoteLocally', () => {
     const instructions: RawInstruction[] = [{ title: 'T2', text: 'text' }];
     applyRemoteLocally(instructions);
     expect(dispatchEventSpy).toHaveBeenCalledOnce();
-    const event = dispatchEventSpy.mock.calls[0][0] as StorageEvent;
+    const event = dispatchEventSpy.mock.calls[0]![0] as StorageEvent;
     expect(event.type).toBe('storage');
     expect(event.key).toBe(WATCHED_LS_KEY);
     expect(event.newValue).toBe(JSON.stringify(instructions));

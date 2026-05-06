@@ -9,10 +9,10 @@ export default defineConfig({
     description: 'Sync AI Studio system instructions across signed-in Chrome devices.',
     version: '0.1.0',
     minimum_chrome_version: '116',
-    permissions: ['storage', 'scripting', 'alarms'],
+    permissions: ['storage', 'scripting', 'alarms', 'identity', 'identity.email'],
     action: {}, // required for chrome.action API (setBadgeText, setBadgeBackgroundColor) in service worker
     host_permissions: ['https://aistudio.google.com/*'],
-    // No <all_urls>, no identity, no tabs, no notifications. Matches D-19 verbatim.
+    // No <all_urls>, no tabs, no notifications. identity + identity.email added in Phase 4 (D-03 / BOOT-03).
     web_accessible_resources: [
       {
         resources: ['injected/ls-observer.js'],
