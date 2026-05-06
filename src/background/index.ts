@@ -4,9 +4,11 @@ import {
   readSyncPending,
   clearSyncPending,
 } from './sync-state';
-import { PENDING_BATCH_TTL_MS, FLUSH_ALARM_NAME } from '../shared/constants';
+import { PENDING_BATCH_TTL_MS, FLUSH_ALARM_NAME, REGISTRY_KEY, BOOTSTRAP_NEEDED_KEY } from '../shared/constants';
 import { handleLsChanged } from './message-handler';
 import { flushPendingWrite } from './alarm-flush';
+import { handleRemoteChanged } from './pull-engine';       // Phase 4
+import { handleLsBootstrap } from './bootstrap';           // Phase 4
 import type { RawInstruction } from '../shared/types';
 
 /**
@@ -60,9 +62,16 @@ export function _resetForTesting(): void {
 }
 
 export default defineBackground(() => {
-  chrome.runtime.onInstalled.addListener(async () => {
+  chrome.runtime.onInstalled.addListener(async (details) => {
     await initializeMeta();
     await ensureInitialized();
+    // Phase 4 (D-05): write bootstrap trigger flag on fresh install only.
+    // Not on update — would re-trigger bootstrap on every extension update.
+    if (details.reason === 'install') {
+      await chrome.storage.local.set({
+        [BOOTSTRAP_NEEDED_KEY]: { triggeredAt: Date.now() },
+      });
+    }
   });
 
   // Phase 2: LS_CHANGED handler
@@ -75,10 +84,24 @@ export default defineBackground(() => {
         return true;
       }
       ensureInitialized()
-        .then(() => handleLsChanged(message.payload as RawInstruction[]))
+        .then(() => handleLsChanged(message.payload as RawInstruction[], message.pageEmail as string | undefined))
         .then(() => sendResponse({ ok: true }))
         .catch((err) => sendResponse({ ok: false, error: String(err) }));
       return true; // keep port open for async response (Pitfall 2 — required for async handlers)
+    }
+
+    // Phase 4: LS_BOOTSTRAP message — first-install union merge.
+    // CS sends raw localStorage snapshot when BOOTSTRAP_NEEDED_KEY is present.
+    if (message?.type === 'LS_BOOTSTRAP') {
+      if (!Array.isArray(message.payload)) {
+        sendResponse({ ok: false, error: 'invalid payload' });
+        return true;
+      }
+      ensureInitialized()
+        .then(() => handleLsBootstrap(message.payload as RawInstruction[]))
+        .then(() => sendResponse({ ok: true }))
+        .catch((err) => sendResponse({ ok: false, error: String(err) }));
+      return true; // keep port open for async response
     }
     // return undefined for unhandled message types — Chrome closes port immediately
   });
@@ -91,7 +114,18 @@ export default defineBackground(() => {
     await flushPendingWrite();
   });
 
-  // Phase 4+ boundary:
-  //   - No chrome.storage.onChanged listener yet (Phase 4)
-  //   - No chrome.tabs.sendMessage yet (Phase 4)
+  // Phase 4: pull engine wake — fires when Chrome sync delivers remote data.
+  // Guard: areaName === 'sync' AND REGISTRY_KEY in changes (prevents re-pull on own push writes).
+  // Pitfall 1 guard: onChanged fires for local writes too — the areaName+key guards prevent
+  // processing the SW's own push writes.
+  chrome.storage.onChanged.addListener(
+    (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
+      if (areaName !== 'sync') return;
+      if (!(REGISTRY_KEY in changes)) return;
+      void ensureInitialized().then(() => handleRemoteChanged(changes, areaName));
+    }
+  );
+
+  // Phase 5+ boundary:
+  //   - Popup message handler (Phase 5)
 });

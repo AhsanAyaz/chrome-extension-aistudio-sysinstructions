@@ -16,7 +16,7 @@ let diffQueue: Promise<void> = Promise.resolve();
  *
  * Security: log UUID count only — never log .text content (RESEARCH security domain).
  */
-export async function handleLsChanged(payload: RawInstruction[]): Promise<void> {
+export async function handleLsChanged(payload: RawInstruction[], pageEmail?: string): Promise<void> {
   console.log('[sysins] push: received', payload.length, 'item(s)');
   // Chain onto the existing queue so each diff runs after the previous one
   // completes — prevents intermediate AI Studio states from overwriting
