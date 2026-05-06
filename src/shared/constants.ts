@@ -29,3 +29,13 @@ export const PENDING_WRITE_KEY = `${LOCAL_KEY_PREFIX}pendingWrite`;
 // Phase 3: name of the debounce alarm (PUSH-07, Hard Rule 3).
 // sysins-flush fires after 30 seconds (delayInMinutes: 0.5, Chrome 120+ minimum).
 export const FLUSH_ALARM_NAME = 'sysins-flush';
+
+// Phase 4: bootstrap trigger flag (D-05).
+// Written by SW onInstalled(reason='install'); cleared by SW after successful union merge.
+// Content script reads this key on first page load — never clears it (Pitfall 3 guard).
+export const BOOTSTRAP_NEEDED_KEY = `${LOCAL_KEY_PREFIX}bootstrapNeeded`;
+
+// Phase 4: deferred remote payload for no-active-tab fallback (D-08).
+// Written by SW when no active AI Studio tab is found after a remote pull.
+// Content script reads and clears on visibilitychange when tab regains focus.
+export const PENDING_REMOTE_KEY = `${LOCAL_KEY_PREFIX}pendingRemote`;
