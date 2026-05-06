@@ -4,8 +4,9 @@ import {
   readSyncPending,
   clearSyncPending,
 } from './sync-state';
-import { PENDING_BATCH_TTL_MS } from '../shared/constants';
+import { PENDING_BATCH_TTL_MS, FLUSH_ALARM_NAME } from '../shared/constants';
 import { handleLsChanged } from './message-handler';
+import { flushPendingWrite } from './alarm-flush';
 import type { RawInstruction } from '../shared/types';
 
 /**
@@ -82,8 +83,15 @@ export default defineBackground(() => {
     // return undefined for unhandled message types — Chrome closes port immediately
   });
 
-  // Phase 3+ boundary:
-  //   - No chrome.storage.onChanged listener (Phase 3)
-  //   - No chrome.alarms (Phase 3)
-  //   - No chrome.tabs.sendMessage (Phase 4)
+  // Phase 3: alarm flush listener
+  // chrome.alarms.onAlarm fires when the 30s debounce window closes.
+  // FLUSH_ALARM_NAME = 'sysins-flush' (constants.ts).
+  chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name !== FLUSH_ALARM_NAME) return;
+    await flushPendingWrite();
+  });
+
+  // Phase 4+ boundary:
+  //   - No chrome.storage.onChanged listener yet (Phase 4)
+  //   - No chrome.tabs.sendMessage yet (Phase 4)
 });

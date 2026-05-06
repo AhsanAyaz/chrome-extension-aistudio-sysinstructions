@@ -1,26 +1,19 @@
-import { LAST_OBSERVED_KEY } from '../shared/constants';
-import type { RawInstruction, LastObservedSnapshot } from '../shared/types';
+import type { RawInstruction } from '../shared/types';
+import { diffAndAccumulate } from './push-engine';
+import { scheduleFlush } from './alarm-flush';
 
 /**
- * Phase 2 SW stub for LS_CHANGED messages.
+ * Phase 3 handler for LS_CHANGED messages.
  *
- * D-01 (SW stub behavior): logs payload to SW console AND writes a snapshot
- * to chrome.storage.local so DevTools storage inspector can verify receipt.
+ * Delegates to push-engine (diff + UUID assignment + pendingWrite accumulation)
+ * and schedules the 30-second debounced alarm flush (PUSH-07).
  *
- * D-02 (snapshot key): writes under sysins:local:lastObserved.
- * Phase 3 reads this key as the initial diff baseline before the first push.
- *
- * Note: payload items are stored verbatim — no field stripping (D-08 / PUSH-06).
+ * Security: log UUID count only — never log .text content (RESEARCH security domain).
  */
-export async function handleLsChanged(
-  payload: RawInstruction[],
-): Promise<void> {
-  console.log('[sysins] LS_CHANGED received:', payload.length, 'items');
-
-  const snapshot: LastObservedSnapshot = {
-    lastObservedAt: Date.now(),
-    itemCount: payload.length,
-    items: payload,
-  };
-  await chrome.storage.local.set({ [LAST_OBSERVED_KEY]: snapshot });
+export async function handleLsChanged(payload: RawInstruction[]): Promise<void> {
+  console.log('[sysins] push: received', payload.length, 'item(s)');
+  await diffAndAccumulate(payload);
+  if (payload.length > 0) {
+    scheduleFlush();
+  }
 }
