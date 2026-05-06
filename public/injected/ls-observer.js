@@ -14,7 +14,7 @@ Storage.prototype.setItem = function (key, value) {
   if (key === WATCHED_KEY && this === window.localStorage) {
     window.postMessage(
       { source: 'sysins-injected', type: 'LS_SET', value: value },
-      '*'
+      window.location.origin  // restrict to same origin; prevents data leak to cross-origin iframes
     );
   }
 };
