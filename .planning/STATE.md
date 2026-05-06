@@ -44,9 +44,16 @@ Items acknowledged at milestone close on 2026-05-06:
 
 Known deferred items at close: 4 (see above)
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260506-r4d | Add README and CONTRIBUTING | 2026-05-06 | — | [260506-r4d-add-readme-contributing](.planning/quick/260506-r4d-add-readme-contributing/) |
+
 ## Session Continuity
 
 Last session: 2026-05-06
+Last activity: 2026-05-06 - Completed quick task 260506-r4d: Add README and CONTRIBUTING
 Milestone archived: v1.0 MVP
 Tag: v1.0
 Next: /gsd-new-milestone to plan v1.1
