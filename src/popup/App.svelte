@@ -25,16 +25,9 @@
   // Show refresh hint when a PULL_NOW click was sent, cleared on dismiss or popup close.
   let showRefreshHint = $state(false);
 
-  onMount(async () => {
-    // Initial hydration from both storage areas (D-01: popup may read sync directly)
-    const [localData, syncData] = await Promise.all([
-      chrome.storage.local.get(SYNC_STATUS_KEY),
-      chrome.storage.sync.get(REGISTRY_KEY),
-    ]);
-    syncStatus = (localData[SYNC_STATUS_KEY] as SyncStatus) ?? { state: 'idle', lastSyncAt: 0 };
-    registry = (syncData[REGISTRY_KEY] as SyncRegistry) ?? {};
-
-    // Live update via onChanged (D-03) — area guards prevent spurious re-renders (Pitfall 2)
+  onMount(() => {
+    // Area-guarded listener registered synchronously — no change events are missed
+    // even if they fire during the async hydration below (CR-01 fix).
     function onChanged(changes: Record<string, chrome.storage.StorageChange>, area: string) {
       if (area === 'local' && SYNC_STATUS_KEY in changes) {
         syncStatus =
@@ -46,7 +39,16 @@
     }
     chrome.storage.onChanged.addListener(onChanged);
 
-    // Return cleanup — Svelte 5 onMount cleanup pattern (Pitfall 7 guard)
+    // Async hydration as fire-and-forget IIFE — onMount must return () => void, not Promise
+    void (async () => {
+      const [localData, syncData] = await Promise.all([
+        chrome.storage.local.get(SYNC_STATUS_KEY),
+        chrome.storage.sync.get(REGISTRY_KEY),
+      ]);
+      syncStatus = (localData[SYNC_STATUS_KEY] as SyncStatus) ?? { state: 'idle', lastSyncAt: 0 };
+      registry = (syncData[REGISTRY_KEY] as SyncRegistry) ?? {};
+    })();
+
     return () => chrome.storage.onChanged.removeListener(onChanged);
   });
 
@@ -105,7 +107,7 @@
     a.href = url;
     a.download = filename;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   // Import JSON — D-08: hidden file input in ExportImportRow triggers this callback
@@ -165,7 +167,6 @@
       {syncStatus}
       showRefreshHint={showRefreshHint && !refreshHintDismissed}
       {dismissHint}
-      {importMessage}
     />
   {/if}
   {#if importMessage && syncStatus.state !== 'error'}

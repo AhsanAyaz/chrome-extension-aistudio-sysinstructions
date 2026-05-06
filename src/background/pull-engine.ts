@@ -89,7 +89,6 @@ export async function handleRemoteChanged(
   const now = Date.now();
   await writeSyncStatus({ state: 'idle', lastSyncAt: now });
   await chrome.action.setBadgeText({ text: '' });
-  await chrome.action.setBadgeBackgroundColor({ color: '#000000' }); // reset color
 }
 
 // ---------------------------------------------------------------------------

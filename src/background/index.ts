@@ -9,7 +9,7 @@ import { handleLsChanged } from './message-handler';
 import { flushPendingWrite } from './alarm-flush';
 import { handleRemoteChanged } from './pull-engine';       // Phase 4
 import { handleLsBootstrap } from './bootstrap';           // Phase 4
-import { diffAndAccumulate } from './push-engine';         // Phase 5: IMPORT_ITEMS handler
+import { importItems } from './push-engine';               // Phase 5: IMPORT_ITEMS handler
 import type { RawInstruction } from '../shared/types';
 
 /**
@@ -118,7 +118,7 @@ export default defineBackground(() => {
       void ensureInitialized().then(async () => {
         const r = await chrome.storage.sync.get(REGISTRY_KEY);
         const fakeChanges: Record<string, chrome.storage.StorageChange> = {
-          [REGISTRY_KEY]: { newValue: r[REGISTRY_KEY] } as chrome.storage.StorageChange,
+          [REGISTRY_KEY]: { newValue: r[REGISTRY_KEY] ?? {} } as chrome.storage.StorageChange,
         };
         await handleRemoteChanged(fakeChanges, 'sync');
       });
@@ -132,7 +132,7 @@ export default defineBackground(() => {
     if (message?.type === 'IMPORT_ITEMS') {
       if (!Array.isArray(message.payload)) return false;
       void ensureInitialized()
-        .then(() => diffAndAccumulate(message.payload as RawInstruction[]))
+        .then(() => importItems(message.payload as RawInstruction[]))
         .then(() => flushPendingWrite());
       return false;
     }

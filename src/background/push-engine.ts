@@ -194,3 +194,69 @@ export async function drainPendingWrite(): Promise<Record<string, unknown> | nul
 export async function clearPendingWrite(): Promise<void> {
   await chrome.storage.local.remove([PENDING_WRITE_KEY, SYNC_PENDING_KEY]);
 }
+
+/**
+ * Import instructions with union-merge semantics — existing items are NEVER tombstoned.
+ *
+ * Hard Rule 5: import is additive only. Items in the current registry absent from the
+ * imported payload stay live. This differs from diffAndAccumulate which tombstones
+ * absent items (correct for LS_CHANGED observation but wrong for user-initiated import).
+ */
+export async function importItems(imported: RawInstruction[]): Promise<void> {
+  if (imported.length === 0) return;
+
+  const [registry, lastPushed, existingPending] = await Promise.all([
+    getRegistry(),
+    readLastPushed(),
+    drainPendingWrite(),
+  ]);
+
+  const pendingRegistry = existingPending
+    ? (existingPending[REGISTRY_KEY] as SyncRegistry | undefined) ?? null
+    : null;
+  const baseRegistry: SyncRegistry = pendingRegistry ?? registry;
+
+  const titleToUuid = new Map<string, string>();
+  for (const [uuid, rec] of Object.entries(baseRegistry)) {
+    if (rec.deletedAt === null) {
+      titleToUuid.set(rec.title, uuid);
+    }
+  }
+
+  const now = Date.now();
+  const nextRegistry: SyncRegistry = { ...baseRegistry }; // preserve all existing items
+  const bodyWrites: Record<string, string> = {};
+  let hasChanges = false;
+
+  for (const item of imported) {
+    const existingUuid = titleToUuid.get(item.title);
+    const uuid = existingUuid ?? crypto.randomUUID();
+
+    const titleHash = await shortHash(item.title);
+    const unknownFields = getUnknownFields(item);
+    const bodyJson = JSON.stringify({ text: item.text, ...unknownFields });
+    const bodyHash = await shortHash(bodyJson);
+
+    const pushed = lastPushed[uuid];
+    const unchanged =
+      pushed !== undefined &&
+      pushed.titleHash === titleHash &&
+      pushed.bodyHash === bodyHash;
+
+    if (!unchanged) {
+      const chunks = splitIntoChunks(bodyJson);
+      nextRegistry[uuid] = { title: item.title, updatedAt: now, deletedAt: null, chunks: chunks.length };
+      Object.assign(bodyWrites, bodyWriteMap(uuid, chunks));
+      hasChanges = true;
+    }
+    // No tombstone loop — absent items remain alive (Hard Rule 5)
+  }
+
+  if (!hasChanges) return;
+
+  console.log(
+    `[sysins] push-engine: import ${imported.length} item(s), ${Object.keys(bodyWrites).length} body chunks changed`,
+  );
+
+  await persistPendingWrite({ [REGISTRY_KEY]: nextRegistry, ...bodyWrites });
+}
