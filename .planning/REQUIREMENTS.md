@@ -38,11 +38,16 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Sync Engine — Pull (chrome.storage.sync → localStorage)
 
-- [ ] **PULL-01**: When `chrome.storage.sync` reports a change from another device, the service worker wakes, computes the merged registry, and applies the result via the content script.
-- [ ] **PULL-02**: Per-item conflicts are resolved by last-write-wins on `updated_at`; tombstones (`deleted_at > updated_at`) win unconditionally over live items so a delete on one device cannot be resurrected by an older live copy elsewhere.
-- [ ] **PULL-03**: Pulls dispatched into an open AI Studio tab write `localStorage` and dispatch a synthetic `StorageEvent`; if AI Studio's React does not pick it up, the popup/badge surfaces a "Refresh AI Studio to see latest" hint instead of failing silently.
-- [ ] **PULL-04**: Pull-initiated writes do not trigger another push (no infinite sync loop) — implemented via a write-suppression flag during apply, plus diff-against-last-pushed.
-- [ ] **PULL-05**: When two AI Studio tabs are open, only one applies a remote update so concurrent writes do not race.
+- [x] **PULL-01
+**: When `chrome.storage.sync` reports a change from another device, the service worker wakes, computes the merged registry, and applies the result via the content script.
+- [x] **PULL-02
+**: Per-item conflicts are resolved by last-write-wins on `updated_at`; tombstones (`deleted_at > updated_at`) win unconditionally over live items so a delete on one device cannot be resurrected by an older live copy elsewhere.
+- [x] **PULL-03
+**: Pulls dispatched into an open AI Studio tab write `localStorage` and dispatch a synthetic `StorageEvent`; if AI Studio's React does not pick it up, the popup/badge surfaces a "Refresh AI Studio to see latest" hint instead of failing silently.
+- [x] **PULL-04
+**: Pull-initiated writes do not trigger another push (no infinite sync loop) — implemented via a write-suppression flag during apply, plus diff-against-last-pushed.
+- [x] **PULL-05
+**: When two AI Studio tabs are open, only one applies a remote update so concurrent writes do not race.
 
 ### Bootstrap & Account Safety
 

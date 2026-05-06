@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-05-06T10:49:00Z"
-last_activity: 2026-05-06 -- Phase 04 Plan 02 complete (shared constants + types)
+stopped_at: Completed 04-03-PLAN.md — pull-engine handleRemoteChanged TDD
+last_updated: "2026-05-06T10:54:57.981Z"
+last_activity: 2026-05-06
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 20
-  completed_plans: 15
-  percent: 75
+  completed_plans: 17
+  percent: 85
 ---
 
 # Project State
@@ -26,12 +26,12 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 ## Current Position
 
 Phase: 04 (pull-engine-bootstrap) — EXECUTING
-Plan: 2 of 6
-Status: Executing Phase 04
-Last activity: 2026-05-06 -- Plan 04-02 complete (Phase 4 constants + types)
+Plan: 3 of 6
+Status: Ready to execute
+Last activity: 2026-05-06
 Resume file: None
 
-Progress: [█████████░] 93%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [█████████░] 93%
 | Phase 03-push-engine P03 | 7 minutes | 3 tasks | 2 files |
 | Phase 03-push-engine P04 | 3 minutes | 1 tasks | 3 files |
 | Phase 04-pull-engine-bootstrap P02 | 1 min | 2 tasks | 2 files |
+| Phase 04 P03 | 5 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,9 @@ Recent decisions affecting current work:
 - T-03-04-b mitigation: alarm.name !== FLUSH_ALARM_NAME guard in onAlarm — spurious alarm names are a no-op
 - BOOTSTRAP_NEEDED_KEY and PENDING_REMOTE_KEY use template-literal pattern (${LOCAL_KEY_PREFIX}...) — D-24 enforcement, no inline string literals in Phase 4 files
 - BootstrapNeededFlag is an object with triggeredAt (not boolean) — enables stale-flag detection without schema change
+- updateLastPushed implemented inline in pull-engine.ts (chrome.storage.local.set directly) — no export from alarm-flush.ts needed
+- mockTabsQuery() helper pattern for chrome.tabs.query overload disambiguation — mockImplementation with 'as any' cast
+- pull-engine deliverToTab falls through to PENDING_REMOTE_KEY on sendMessage throw (Pitfall 2) — content script not ready path handled
 
 ### Pending Todos
 
@@ -135,8 +139,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-06T10:49:00Z
-Stopped at: Completed 04-02-PLAN.md — Phase 4 shared constants + types
+Last session: 2026-05-06T10:54:57.977Z
+Stopped at: Completed 04-03-PLAN.md — pull-engine handleRemoteChanged TDD
 Resume file: None
 
 **Planned Phase:** 03 (push-engine) — 5 plans — 2026-05-06T01:45:12.549Z
