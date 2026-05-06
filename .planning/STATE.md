@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-03-PLAN.md — pull-engine handleRemoteChanged TDD
-last_updated: "2026-05-06T10:54:57.981Z"
+stopped_at: Completed 04-05-PLAN.md — full pull+bootstrap wiring, BOOT-03 account preflight
+last_updated: "2026-05-06T12:09:51.203Z"
 last_activity: 2026-05-06
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 20
-  completed_plans: 17
-  percent: 85
+  completed_plans: 19
+  percent: 95
 ---
 
 # Project State
@@ -26,12 +26,12 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 ## Current Position
 
 Phase: 04 (pull-engine-bootstrap) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-05-06
 Resume file: None
 
-Progress: [█████████░] 85%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 85%
 | Phase 03-push-engine P04 | 3 minutes | 1 tasks | 3 files |
 | Phase 04-pull-engine-bootstrap P02 | 1 min | 2 tasks | 2 files |
 | Phase 04 P03 | 5 min | 3 tasks | 2 files |
+| Phase 04 P05 | 646s | 4 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,9 @@ Recent decisions affecting current work:
 - updateLastPushed implemented inline in pull-engine.ts (chrome.storage.local.set directly) — no export from alarm-flush.ts needed
 - mockTabsQuery() helper pattern for chrome.tabs.query overload disambiguation — mockImplementation with 'as any' cast
 - pull-engine deliverToTab falls through to PENDING_REMOTE_KEY on sendMessage throw (Pitfall 2) — content script not ready path handled
+- identity stub on globalThis used in account-preflight tests — fakeBrowser does not implement chrome.identity
+- extractPageEmail defined locally in content/index.ts to avoid cross-entrypoint import from background/
+- handleLsChanged signature extended with optional pageEmail parameter for BOOT-03 pass-through from index.ts
 
 ### Pending Todos
 
@@ -139,8 +143,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-06T10:54:57.977Z
-Stopped at: Completed 04-03-PLAN.md — pull-engine handleRemoteChanged TDD
+Last session: 2026-05-06T12:09:51.200Z
+Stopped at: Completed 04-05-PLAN.md — full pull+bootstrap wiring, BOOT-03 account preflight
 Resume file: None
 
 **Planned Phase:** 03 (push-engine) — 5 plans — 2026-05-06T01:45:12.549Z

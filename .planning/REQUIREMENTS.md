@@ -51,9 +51,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Bootstrap & Account Safety
 
-- [ ] **BOOT-01**: First-install on a device is a union merge between local AI Studio data and remote sync data, never a pull-overwrite — instructions present on either side survive.
-- [ ] **BOOT-02**: Items found in `localStorage` without a UUID are matched to remote items by title at bootstrap only; once UUIDs are assigned, title-matching is never used again.
-- [ ] **BOOT-03**: Before auto-sync runs, the extension performs an account-mismatch pre-flight check: if the Chrome profile's signed-in account differs from the AI Studio account on the page, auto-sync is paused and the popup surfaces a warning.
+- [x] **BOOT-01
+**: First-install on a device is a union merge between local AI Studio data and remote sync data, never a pull-overwrite — instructions present on either side survive.
+- [x] **BOOT-02
+**: Items found in `localStorage` without a UUID are matched to remote items by title at bootstrap only; once UUIDs are assigned, title-matching is never used again.
+- [x] **BOOT-03
+**: Before auto-sync runs, the extension performs an account-mismatch pre-flight check: if the Chrome profile's signed-in account differs from the AI Studio account on the page, auto-sync is paused and the popup surfaces a warning.
 
 ### Popup UI
 
