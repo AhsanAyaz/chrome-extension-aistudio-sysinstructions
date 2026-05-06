@@ -105,7 +105,7 @@ export async function handleRemoteChanged(
  * the correct origin — no cross-origin delivery risk.
  */
 export async function deliverToTab(payload: RawInstruction[]): Promise<void> {
-  const tabs = await chrome.tabs.query({ url: '*://aistudio.google.com/*', active: true });
+  const tabs = await chrome.tabs.query({ url: '*://aistudio.google.com/*' });
   const tab = tabs[0];
 
   if (tab?.id !== undefined) {
