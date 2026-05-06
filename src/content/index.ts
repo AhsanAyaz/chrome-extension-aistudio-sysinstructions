@@ -56,7 +56,9 @@ export default defineContentScript({
     // Belt-and-suspenders: catches writes missed by the injector (e.g. writes that
     // occurred before document_start or in edge cases). Continuous, not visibility-gated.
     // lastSnapshot diff guard prevents duplicate LS_CHANGED fires for unchanged values.
-    let lastSnapshot: string | null = null;
+    // Initialize to current value so the first poll does not spuriously fire for
+    // a key that was already set before the content script loaded (WR-03).
+    let lastSnapshot: string | null = localStorage.getItem('aistudio_all_system_instructions');
     setInterval(() => {
       const value = localStorage.getItem('aistudio_all_system_instructions');
       if (value === lastSnapshot) return; // no change — skip
