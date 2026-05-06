@@ -9,6 +9,7 @@ import { handleLsChanged } from './message-handler';
 import { flushPendingWrite } from './alarm-flush';
 import { handleRemoteChanged } from './pull-engine';       // Phase 4
 import { handleLsBootstrap } from './bootstrap';           // Phase 4
+import { diffAndAccumulate } from './push-engine';         // Phase 5: IMPORT_ITEMS handler
 import type { RawInstruction } from '../shared/types';
 
 /**
@@ -103,6 +104,39 @@ export default defineBackground(() => {
         .catch((err) => sendResponse({ ok: false, error: String(err) }));
       return true; // keep port open for async response
     }
+    // Phase 5: PUSH_NOW — bypass 30s debounce and flush immediately (UI-03)
+    // D-04: fire-and-forget, return false (no sendResponse needed)
+    if (message?.type === 'PUSH_NOW') {
+      void ensureInitialized().then(() => flushPendingWrite());
+      return false;
+    }
+
+    // Phase 5: PULL_NOW — force a fresh pull by re-triggering handleRemoteChanged (UI-04)
+    // Pass current registry as "new value" — handleRemoteChanged re-runs the full pull path.
+    // D-04: fire-and-forget, return false
+    if (message?.type === 'PULL_NOW') {
+      void ensureInitialized().then(async () => {
+        const r = await chrome.storage.sync.get(REGISTRY_KEY);
+        const fakeChanges: Record<string, chrome.storage.StorageChange> = {
+          [REGISTRY_KEY]: { newValue: r[REGISTRY_KEY] } as chrome.storage.StorageChange,
+        };
+        await handleRemoteChanged(fakeChanges, 'sync');
+      });
+      return false;
+    }
+
+    // Phase 5: IMPORT_ITEMS — route imported instructions through the standard merge path (EXPORT-02)
+    // D-09: same path as live LS_CHANGED; diffAndAccumulate assigns UUIDs + accumulates pending write.
+    // flushPendingWrite() called directly (not scheduleFlush) — import is a user-explicit action.
+    // D-04: fire-and-forget, return false
+    if (message?.type === 'IMPORT_ITEMS') {
+      if (!Array.isArray(message.payload)) return false;
+      void ensureInitialized()
+        .then(() => diffAndAccumulate(message.payload as RawInstruction[]))
+        .then(() => flushPendingWrite());
+      return false;
+    }
+
     // return undefined for unhandled message types — Chrome closes port immediately
   });
 
