@@ -18,7 +18,7 @@ For: a single user (initially the author) who uses AI Studio on multiple machine
 
 (None yet — ship v1 to validate)
 
-### Implemented (Phase 1 complete)
+### Implemented (Phase 1 + Phase 2 complete)
 
 - [x] Storage schema locked: `sysins:*` namespace, registry/body separation, 7 KB chunk budget (validated in Phase 1)
 - [x] UUID identity model: `crypto.randomUUID()` on createItem, permanent — rename preserves UUID (validated in Phase 1)
@@ -27,6 +27,11 @@ For: a single user (initially the author) who uses AI Studio on multiple machine
 - [x] SW bootstrap: initializeMeta write-if-absent (D-10), orphan syncPending recovery (D-13) (validated in Phase 1)
 - [x] DIST-04: no third-party network calls — static scan + ESLint layer 1 enforced (validated in Phase 1)
 - [x] Manifest locked: permissions exactly ['storage','scripting'], host exactly ['https://aistudio.google.com/*'] (validated in Phase 1)
+- [x] Observation pipeline: MAIN-world Storage.prototype.setItem patch → ISOLATED-world relay → SW onMessage handler (validated in Phase 2)
+- [x] Null/empty guard (PUSH-05): isValidPayload gates both postMessage and polling paths — empty reads never propagate as LS_CHANGED (validated in Phase 2)
+- [x] Unknown-field passthrough (PUSH-06): RawInstruction index signature preserves all AI Studio fields verbatim through the pipeline (validated in Phase 2)
+- [x] Observation snapshot: sysins:local:lastObserved written to chrome.storage.local on every LS_CHANGED; Phase 3 reads it as initial diff baseline (validated in Phase 2)
+- [x] WXT-STATIC pattern established: plain .js MAIN-world files live in public/ (not src/) for WXT static copy to build output (validated in Phase 2)
 
 ### Active
 
@@ -119,4 +124,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-05 — Phase 1 (Foundation) complete*
+*Last updated: 2026-05-06 — Phase 2 (Observation Pipeline) complete*
