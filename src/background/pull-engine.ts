@@ -98,7 +98,7 @@ export async function handleRemoteChanged(
  * T-04-03-03: URL filter `*://aistudio.google.com/*` ensures we only target
  * the correct origin — no cross-origin delivery risk.
  */
-async function deliverToTab(payload: RawInstruction[]): Promise<void> {
+export async function deliverToTab(payload: RawInstruction[]): Promise<void> {
   const tabs = await chrome.tabs.query({ url: '*://aistudio.google.com/*', active: true });
   const tab = tabs[0];
 
