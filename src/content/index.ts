@@ -15,11 +15,24 @@ import {
 } from '../shared/constants';
 
 /**
+ * Returns false when extension context has been invalidated (e.g. after reload).
+ * All chrome API calls throw in that state — this guard prevents the errors.
+ */
+function isContextValid(): boolean {
+  try {
+    return !!chrome.runtime?.id;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Fire-and-forget wrapper for chrome.runtime.sendMessage.
  * Suppresses unhandled-rejection noise when the SW is inactive; the SW will
  * catch up via the polling fallback (D-09).
  */
 function fireAndForget(payload: object): void {
+  if (!isContextValid()) return;
   chrome.runtime.sendMessage(payload).catch(() => {
     // SW may be inactive; message dropped intentionally. SW will catch up via polling.
   });
@@ -135,29 +148,38 @@ export default defineContentScript({
     // SW writes BOOTSTRAP_NEEDED_KEY on onInstalled(reason='install').
     // CS reads flag, sends LS_BOOTSTRAP if valid data is present.
     // CS NEVER clears the flag — only SW clears it after successful union merge (Pitfall 3 guard).
-    const flagResult = await chrome.storage.local.get(BOOTSTRAP_NEEDED_KEY);
-    if (flagResult[BOOTSTRAP_NEEDED_KEY] !== undefined) {
-      const raw = localStorage.getItem(WATCHED_LS_KEY);
-      if (raw !== null && isValidPayload(raw)) {
-        fireAndForget({
-          type: 'LS_BOOTSTRAP',
-          payload: JSON.parse(raw) as RawInstruction[],
-          pageEmail, // BOOT-03: optional — SW skips mismatch check if undefined
-        });
+    try {
+      const flagResult = await chrome.storage.local.get(BOOTSTRAP_NEEDED_KEY);
+      if (flagResult[BOOTSTRAP_NEEDED_KEY] !== undefined) {
+        const raw = localStorage.getItem(WATCHED_LS_KEY);
+        if (raw !== null && isValidPayload(raw)) {
+          fireAndForget({
+            type: 'LS_BOOTSTRAP',
+            payload: JSON.parse(raw) as RawInstruction[],
+            pageEmail, // BOOT-03: optional — SW skips mismatch check if undefined
+          });
+        }
+        // If no valid local data: SW will pull from remote on its next wake.
+        // Hard Rule 4: empty localStorage is NOT propagated as "nothing to bootstrap".
       }
-      // If no valid local data: SW will pull from remote on its next wake.
-      // Hard Rule 4: empty localStorage is NOT propagated as "nothing to bootstrap".
+    } catch {
+      // Extension context invalidated — bootstrap attempt skipped.
     }
 
     // Phase 4: apply deferred remote payload when this tab regains focus (D-08, PULL-05).
     // SW writes PENDING_REMOTE_KEY when no active tab is found after a pull.
     document.addEventListener('visibilitychange', async () => {
       if (document.visibilityState !== 'visible') return;
-      const r = await chrome.storage.local.get(PENDING_REMOTE_KEY);
-      const pending = r[PENDING_REMOTE_KEY] as PendingRemoteState | undefined;
-      if (pending !== undefined) {
-        applyRemoteLocally(pending.payload);
-        await chrome.storage.local.remove(PENDING_REMOTE_KEY);
+      if (!isContextValid()) return;
+      try {
+        const r = await chrome.storage.local.get(PENDING_REMOTE_KEY);
+        const pending = r[PENDING_REMOTE_KEY] as PendingRemoteState | undefined;
+        if (pending !== undefined) {
+          applyRemoteLocally(pending.payload);
+          await chrome.storage.local.remove(PENDING_REMOTE_KEY);
+        }
+      } catch {
+        // Extension context invalidated — pending remote delivery skipped.
       }
     });
   },
