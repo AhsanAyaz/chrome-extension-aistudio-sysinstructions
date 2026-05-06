@@ -42,12 +42,14 @@ describe('DIST-02: manifest permissions', () => {
     expect(m.manifest_version).toBe(3);
   });
 
-  it('permissions is exactly ["storage", "scripting", "alarms"]', () => {
+  it('permissions is exactly ["storage", "scripting", "alarms", "identity", "identity.email"]', () => {
     const m = loadManifest();
     // Order-insensitive equality with cardinality check.
     // Phase 3 adds "alarms" (required for chrome.alarms.create debounce — PUSH-07).
+    // Phase 4 adds "identity" + "identity.email" (BOOT-03 account mismatch pre-flight — D-03).
+    // Both required per spike findings: identity alone returns empty email; identity.email alone leaves chrome.identity undefined.
     const perms = (m.permissions ?? []).slice().sort();
-    expect(perms).toEqual(['alarms', 'scripting', 'storage']);
+    expect(perms).toEqual(['alarms', 'identity', 'identity.email', 'scripting', 'storage']);
   });
 
   it('host_permissions is exactly ["https://aistudio.google.com/*"]', () => {
@@ -63,7 +65,8 @@ describe('DIST-02: manifest permissions', () => {
   it('forbidden permissions are absent', () => {
     const m = loadManifest();
     const perms = m.permissions ?? [];
-    for (const forbidden of ['identity', 'tabs', 'notifications', 'cookies', 'webRequest', 'webRequestBlocking']) {
+    // 'identity' and 'identity.email' are Phase 4 additions (D-03 / BOOT-03) — not forbidden.
+    for (const forbidden of ['tabs', 'notifications', 'cookies', 'webRequest', 'webRequestBlocking']) {
       expect(perms).not.toContain(forbidden);
     }
   });
