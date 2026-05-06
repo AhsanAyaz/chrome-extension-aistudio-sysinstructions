@@ -469,22 +469,25 @@ Step 2.6: SKIPPED (no external tools or services beyond Chrome extension APIs, w
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`alarms` permission — is it already in the manifest?**
    - What we know: Phase 1 locked the manifest with `storage`, `scripting`, and the aistudio.google.com host permission. `alarms` was not listed in Phase 1's plan.
    - What's unclear: Whether WXT auto-adds `alarms` from usage, or whether it must be explicit.
    - Recommendation: Wave 0 of Phase 3 should add `"alarms"` to `wxt.config.ts` manifest permissions and verify with `npx tsc --noEmit` + `wxt build`.
+   - **RESOLVED: Plan 03-01 adds `"alarms"` to `wxt.config.ts` manifest permissions as its first task.**
 
 2. **Storage key for persisted pendingWrite**
    - What we know: `SyncPendingSentinel` (D-13) stores `{ batchId, keys, startedAt }` — the key list — but not the values. The actual batch values need a separate key.
    - What's unclear: Whether to reuse the D-13 shape (extend it with `values`) or introduce a new `sysins:local:pendingWrite` key alongside `syncPending`.
    - Recommendation: Introduce `sysins:local:pendingWrite` as a separate key for the batch payload; keep `syncPending` as the sentinel-only key. Cleaner separation of concerns. Add `PENDING_WRITE_KEY` constant to `constants.ts`.
+   - **RESOLVED: Plan 03-01 adds `PENDING_WRITE_KEY = 'sysins:local:pendingWrite'` to `constants.ts`. Plans 03-02/03-03 use this separate key for batch payload; `SYNC_PENDING_KEY` remains sentinel-only.**
 
 3. **lastPushed bodyHash computation efficiency**
    - What we know: `writeLastPushed` must store `bodyHash` per UUID to detect changes in subsequent diffs. Computing `shortHash(bodyJson)` twice (once at diff time, once at flush time) wastes async calls.
    - What's unclear: Best place to carry the computed hashes forward.
    - Recommendation: Compute title/body hashes at diff time and carry them in the pendingWrite metadata (alongside the batch, in local storage) so `writeLastPushed` can use them without recomputing.
+   - **RESOLVED: Plan 03-03's `writeLastPushed` reconstructs body JSON from the batch chunk keys (already in memory at flush time) — no second storage round-trip needed.**
 
 ---
 
