@@ -26,15 +26,22 @@ beforeEach(() => {
   _resetForTesting();
 });
 
+// Typed helper to mock chrome.tabs.query — avoids overload ambiguity with `void` return.
+function mockTabsQuery(tabs: chrome.tabs.Tab[]): void {
+  vi.spyOn(chrome.tabs, 'query').mockImplementation(
+    // chrome.tabs.query has overloads where one returns void (callback form).
+    // Cast to any to target the Promise-returning overload used in pull-engine.ts.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (() => Promise.resolve(tabs)) as any,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Case 1 — areaName guard
 // handleRemoteChanged called with areaName='local' → returns immediately, applyRemote NOT called
 // ---------------------------------------------------------------------------
 describe('Case 1: areaName guard', () => {
   it('returns immediately without merging when areaName is not sync', async () => {
-    // Stub applyRemote by checking that chrome.storage.sync is NOT written
-    // (applyRemote calls chrome.storage.sync.set). We can detect this via fakeBrowser.
-
     // Seed a remote registry in sync (simulating what onChanged would have)
     const remoteRegistry: SyncRegistry = {
       'uuid-0000-0000-0000-000000000001': {
@@ -101,10 +108,9 @@ describe('Case 3: happy path — active tab receives APPLY_REMOTE message', () =
     });
 
     const tabId = 42;
-    vi.spyOn(chrome.tabs, 'query').mockResolvedValue([
-      { id: tabId, url: 'https://aistudio.google.com/app/prompts' } as chrome.tabs.Tab,
-    ]);
-    const sendMessageSpy = vi.spyOn(chrome.tabs, 'sendMessage').mockResolvedValue(undefined);
+    mockTabsQuery([{ id: tabId, url: 'https://aistudio.google.com/app/prompts' } as chrome.tabs.Tab]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sendMessageSpy = vi.spyOn(chrome.tabs, 'sendMessage').mockImplementation((() => Promise.resolve(undefined)) as any);
 
     const changes = {
       [REGISTRY_KEY]: { newValue: remoteRegistry, oldValue: undefined },
@@ -145,7 +151,7 @@ describe('Case 4: no active tab — falls through to pendingRemote queue', () =>
     });
 
     // No tabs open
-    vi.spyOn(chrome.tabs, 'query').mockResolvedValue([]);
+    mockTabsQuery([]);
 
     const changes = {
       [REGISTRY_KEY]: { newValue: remoteRegistry, oldValue: undefined },
@@ -183,13 +189,12 @@ describe('Case 5: sendMessage throws — falls through to pendingRemote queue', 
     });
 
     const tabId = 99;
-    vi.spyOn(chrome.tabs, 'query').mockResolvedValue([
-      { id: tabId, url: 'https://aistudio.google.com/app/prompts' } as chrome.tabs.Tab,
-    ]);
+    mockTabsQuery([{ id: tabId, url: 'https://aistudio.google.com/app/prompts' } as chrome.tabs.Tab]);
     // sendMessage throws (content script not ready, tab navigating away, etc.)
-    vi.spyOn(chrome.tabs, 'sendMessage').mockRejectedValue(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.spyOn(chrome.tabs, 'sendMessage').mockImplementation((() => Promise.reject(
       new Error('Could not establish connection. Receiving end does not exist.'),
-    );
+    )) as any);
 
     const changes = {
       [REGISTRY_KEY]: { newValue: remoteRegistry, oldValue: undefined },
@@ -224,10 +229,9 @@ describe('Case 6: D-04 loop guard — LAST_PUSHED_KEY updated after delivery', (
       'sysins:body:uuid-0000-0000-0000-000000000004:c0': JSON.stringify({ text: 'body D' }),
     });
 
-    vi.spyOn(chrome.tabs, 'query').mockResolvedValue([
-      { id: 11, url: 'https://aistudio.google.com/app/prompts' } as chrome.tabs.Tab,
-    ]);
-    vi.spyOn(chrome.tabs, 'sendMessage').mockResolvedValue(undefined);
+    mockTabsQuery([{ id: 11, url: 'https://aistudio.google.com/app/prompts' } as chrome.tabs.Tab]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.spyOn(chrome.tabs, 'sendMessage').mockImplementation((() => Promise.resolve(undefined)) as any);
 
     const changes = {
       [REGISTRY_KEY]: { newValue: remoteRegistry, oldValue: undefined },
