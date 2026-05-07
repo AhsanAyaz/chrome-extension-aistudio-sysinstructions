@@ -16,6 +16,7 @@ import {
   REGISTRY_KEY,
   BODY_KEY_PREFIX,
   LAST_OBSERVED_KEY,
+  PUSH_BASELINE_KEY,
 } from '../shared/constants';
 import { LAST_PUSHED_KEY, SYNC_PENDING_KEY } from './sync-state';
 import { shortHash } from './hash';
@@ -145,13 +146,16 @@ describe('Case 4: item absent from payload gets tombstoned', () => {
     await chrome.storage.sync.set({ [REGISTRY_KEY]: registry });
 
     // Simulate both items having been previously flushed by this device.
-    // Without lastPushed entries, items that arrived via remote pull would not be
+    // Without pushBaseline entries, items that arrived via remote pull would not be
     // tombstoned (D-18 guard) — seeding here models the post-flush device state.
     const lastPushed: LastPushedSnapshot = {
       [uuidA]: { titleHash: 'ha', bodyHash: 'ba', updatedAt: 100 },
       [uuidB]: { titleHash: 'hb', bodyHash: 'bb', updatedAt: 100 },
     };
-    await chrome.storage.local.set({ [LAST_PUSHED_KEY]: lastPushed });
+    await chrome.storage.local.set({
+      [LAST_PUSHED_KEY]: lastPushed,
+      [PUSH_BASELINE_KEY]: lastPushed,
+    });
 
     // Payload only has B — A should be tombstoned
     const payload: RawInstruction[] = [{ title: 'B', text: 'b text' }];
