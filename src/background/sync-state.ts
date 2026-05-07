@@ -1,7 +1,9 @@
 import {
   LOCAL_KEY_PREFIX,
   PENDING_MERGE_QUEUE_CAP,
+  PUSH_BASELINE_KEY,
 } from '../shared/constants';
+export { PUSH_BASELINE_KEY } from '../shared/constants';
 import type {
   SyncStatus,
   SyncPendingSentinel,
@@ -62,6 +64,11 @@ export async function clearSyncPending(): Promise<void> {
 export async function readLastPushed(): Promise<LastPushedSnapshot> {
   const r = await chrome.storage.local.get(LAST_PUSHED_KEY);
   return (r[LAST_PUSHED_KEY] as LastPushedSnapshot | undefined) ?? {};
+}
+
+export async function readPushBaseline(): Promise<LastPushedSnapshot> {
+  const r = await chrome.storage.local.get(PUSH_BASELINE_KEY);
+  return (r[PUSH_BASELINE_KEY] as LastPushedSnapshot | undefined) ?? {};
 }
 
 // ---- pendingMerges queue (D-14) -------------------------------------------

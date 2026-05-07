@@ -28,7 +28,7 @@ import type {
 import { splitIntoChunks } from './storage-layout';
 import { shortHash } from './hash';
 import { getRegistry } from './registry';
-import { readLastPushed, SYNC_PENDING_KEY } from './sync-state';
+import { readLastPushed, readPushBaseline, SYNC_PENDING_KEY } from './sync-state';
 
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -74,10 +74,11 @@ export async function diffAndAccumulate(payload: RawInstruction[]): Promise<void
   // Hard Rule 4 / PUSH-05: empty payload is a detection failure, never a delete signal.
   if (payload.length === 0) return;
 
-  const [registry, lastPushed, existingPending] = await Promise.all([
-    getRegistry(),       // chrome.storage.sync — last committed state
-    readLastPushed(),    // chrome.storage.local — hash snapshot from last flush
-    drainPendingWrite(), // chrome.storage.local — in-flight intent (may be newer than sync)
+  const [registry, lastPushed, pushBaseline, existingPending] = await Promise.all([
+    getRegistry(),        // chrome.storage.sync — last committed state
+    readLastPushed(),     // chrome.storage.local — hash snapshot (loop-guard dedup only)
+    readPushBaseline(),   // chrome.storage.local — items this device has locally pushed (tombstone eligibility)
+    drainPendingWrite(),  // chrome.storage.local — in-flight intent (may be newer than sync)
   ]);
 
   // Prefer the in-flight pending registry over sync as the base. When multiple
@@ -142,7 +143,7 @@ export async function diffAndAccumulate(payload: RawInstruction[]): Promise<void
   let hasChanges = Object.keys(bodyWrites).length > 0;
   for (const [uuid, rec] of Object.entries(baseRegistry)) {
     const wasLocallyKnown =
-      lastPushed[uuid] !== undefined ||
+      pushBaseline[uuid] !== undefined ||
       (pendingRegistry !== null && uuid in pendingRegistry);
     if (!seenUuids.has(uuid) && rec.deletedAt === null && wasLocallyKnown) {
       nextRegistry[uuid] = { ...rec, deletedAt: now };

@@ -39,3 +39,8 @@ export const BOOTSTRAP_NEEDED_KEY = `${LOCAL_KEY_PREFIX}bootstrapNeeded`;
 // Written by SW when no active AI Studio tab is found after a remote pull.
 // Content script reads and clears on visibilitychange when tab regains focus.
 export const PENDING_REMOTE_KEY = `${LOCAL_KEY_PREFIX}pendingRemote`;
+
+// Tombstone eligibility baseline — written ONLY by push flush (alarm-flush.ts).
+// Distinct from LAST_PUSHED_KEY, which is also written by the pull engine (D-04 loop guard).
+// diffAndAccumulate uses this key to determine which items this device has locally pushed.
+export const PUSH_BASELINE_KEY = 'sysins:local:pushBaseline';
