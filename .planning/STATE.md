@@ -49,11 +49,12 @@ Known deferred items at close: 4 (see above)
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260506-r4d | Add README and CONTRIBUTING | 2026-05-06 | — | [260506-r4d-add-readme-contributing](.planning/quick/260506-r4d-add-readme-contributing/) |
+| 260507-b8k | Fix cross-device tombstone: separate push-baseline from pull-baseline | 2026-05-07 | a57125a | [260507-b8k-fix-cross-device-tombstone-separate-push](.planning/quick/260507-b8k-fix-cross-device-tombstone-separate-push/) |
 
 ## Session Continuity
 
-Last session: 2026-05-06
-Last activity: 2026-05-06 - Completed quick task 260506-r4d: Add README and CONTRIBUTING
+Last session: 2026-05-07
+Last activity: 2026-05-07 - Completed quick task 260507-b8k: Fix cross-device tombstone: separate push-baseline from pull-baseline
 Milestone archived: v1.0 MVP
 Tag: v1.0
 Next: /gsd-new-milestone to plan v1.1
