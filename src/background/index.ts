@@ -4,12 +4,13 @@ import {
   readSyncPending,
   clearSyncPending,
 } from './sync-state';
-import { PENDING_BATCH_TTL_MS, FLUSH_ALARM_NAME, REGISTRY_KEY, BOOTSTRAP_NEEDED_KEY } from '../shared/constants';
+import { PENDING_BATCH_TTL_MS, FLUSH_ALARM_NAME, REGISTRY_KEY, BOOTSTRAP_NEEDED_KEY, WATCHED_LS_KEY } from '../shared/constants';
 import { handleLsChanged } from './message-handler';
 import { flushPendingWrite } from './alarm-flush';
 import { handleRemoteChanged } from './pull-engine';       // Phase 4
 import { handleLsBootstrap } from './bootstrap';           // Phase 4
-import { importItems } from './push-engine';               // Phase 5: IMPORT_ITEMS handler
+import { diffAndAccumulate, importItems } from './push-engine'; // Phase 5
+import { isValidPayload } from '../shared/guard';
 import type { RawInstruction } from '../shared/types';
 
 /**
@@ -104,10 +105,25 @@ export default defineBackground(() => {
         .catch((err) => sendResponse({ ok: false, error: String(err) }));
       return true; // keep port open for async response
     }
-    // Phase 5: PUSH_NOW — bypass 30s debounce and flush immediately (UI-03)
-    // D-04: fire-and-forget, return false (no sendResponse needed)
+    // Phase 5: PUSH_NOW — read current localStorage from AI Studio tab, diff, then flush (UI-03).
+    // D-04: fire-and-forget. Fallback: if no tab is found or READ_LS_NOW fails, flush whatever
+    // is already pending (preserves the original bypass-debounce behaviour).
     if (message?.type === 'PUSH_NOW') {
-      void ensureInitialized().then(() => flushPendingWrite());
+      void ensureInitialized().then(async () => {
+        const tabs = await chrome.tabs.query({ url: '*://aistudio.google.com/*' });
+        const tab = tabs[0];
+        if (tab?.id !== undefined) {
+          try {
+            const resp = await chrome.tabs.sendMessage(tab.id, { type: 'READ_LS_NOW' }) as { raw: string | null } | undefined;
+            if (resp?.raw && isValidPayload(resp.raw)) {
+              await diffAndAccumulate(JSON.parse(resp.raw) as RawInstruction[]);
+            }
+          } catch {
+            // Tab not ready — fall through and flush whatever is pending.
+          }
+        }
+        await flushPendingWrite();
+      });
       return false;
     }
 

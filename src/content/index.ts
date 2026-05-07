@@ -135,11 +135,17 @@ export default defineContentScript({
     }, 2000);
 
     // Phase 4: receive merged instruction array from the service worker (PULL-01, PULL-03).
-    // Synchronous handler — do NOT return true (no async response needed).
-    chrome.runtime.onMessage.addListener((message) => {
+    // Phase 5: READ_LS_NOW — Push Now reads current localStorage before flushing.
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message?.type === 'APPLY_REMOTE') {
         applyRemoteLocally(message.payload as RawInstruction[]);
         // No sendResponse — fire-and-forget delivery (Hard Rule 8)
+        return undefined;
+      }
+      if (message?.type === 'READ_LS_NOW') {
+        const raw = localStorage.getItem(WATCHED_LS_KEY);
+        sendResponse({ raw });
+        return false;
       }
       // Return undefined for unhandled types — Chrome closes the port immediately.
     });
