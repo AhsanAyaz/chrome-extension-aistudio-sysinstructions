@@ -130,3 +130,18 @@ export interface PendingRemoteState {
 export interface BootstrapNeededFlag {
   triggeredAt: number; // epoch ms
 }
+
+// Google Drive AppData sync backend types.
+// DriveFileContent: shape of the JSON stored in Drive (mirrors the pendingWrite batch format).
+export interface DriveFileContent {
+  schemaVersion: 1;
+  data: Record<string, unknown>; // sysins:registry + sysins:body:* keys
+}
+
+// sysins:local:driveCache — local mirror of the last-known Drive file state.
+// Avoids a Drive API call on every getRegistry() / popup read.
+export interface DriveCache {
+  fileId: string;
+  modifiedTime: string; // ISO string from Drive API — used to detect remote changes on poll
+  data: Record<string, unknown>; // same shape as DriveFileContent.data
+}

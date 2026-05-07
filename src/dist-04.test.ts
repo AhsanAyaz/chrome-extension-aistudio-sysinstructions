@@ -26,12 +26,14 @@ const FORBIDDEN_PATTERNS: ReadonlyArray<RegExp> = [
 // — and the literal `fetch(` regex it contains — does not trigger violations.
 const SCAN_EXTENSIONS = /\.(ts|js|svelte|tsx|jsx)$/;
 const TEST_FILE_SUFFIX = '.test.ts';
+// drive-client.ts is the authorized Drive API backend — fetch() is its sole purpose.
+const ALLOWED_FILES = new Set(['drive-client.ts']);
 
 function* walk(dir: string): Generator<string> {
   for (const name of readdirSync(dir)) {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) yield* walk(path);
-    else if (SCAN_EXTENSIONS.test(name) && !name.endsWith(TEST_FILE_SUFFIX)) {
+    else if (SCAN_EXTENSIONS.test(name) && !name.endsWith(TEST_FILE_SUFFIX) && !ALLOWED_FILES.has(name)) {
       yield path;
     }
   }

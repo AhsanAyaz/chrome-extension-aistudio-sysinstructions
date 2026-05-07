@@ -8,10 +8,19 @@ import {
   applyRemote,
   reconstructInstructions,
 } from './registry';
-import { REGISTRY_KEY, BODY_KEY_PREFIX } from '../shared/constants';
-import type { SyncRegistry } from '../shared/types';
+import { REGISTRY_KEY, BODY_KEY_PREFIX, DRIVE_CACHE_KEY } from '../shared/constants';
+import type { SyncRegistry, DriveCache } from '../shared/types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function makeDriveCache(registry: SyncRegistry, bodies: Record<string, string> = {}): DriveCache {
+  return { fileId: '', modifiedTime: '', data: { [REGISTRY_KEY]: registry, ...bodies } };
+}
+
+async function getDriveCache(): Promise<DriveCache | undefined> {
+  const r = await chrome.storage.local.get(DRIVE_CACHE_KEY);
+  return r[DRIVE_CACHE_KEY] as DriveCache | undefined;
+}
 
 beforeEach(() => {
   fakeBrowser.reset();
@@ -30,9 +39,9 @@ describe('createItem (FND-01: UUID identity, D-17: crypto.randomUUID)', () => {
     expect(reg[uuid]?.chunks).toBeGreaterThanOrEqual(1);
     expect(reg[uuid]?.updatedAt).toBeGreaterThan(0);
 
-    // Body chunk c0 was written
-    const body = await chrome.storage.sync.get(`${BODY_KEY_PREFIX}${uuid}:c0`);
-    expect(body[`${BODY_KEY_PREFIX}${uuid}:c0`]).toBeDefined();
+    // Body chunk c0 was written to Drive cache
+    const cache = await getDriveCache();
+    expect(cache?.data[`${BODY_KEY_PREFIX}${uuid}:c0`]).toBeDefined();
   });
 });
 
@@ -42,12 +51,11 @@ describe('updateItem (FND-01: rename preserves UUID, FND-02: updatedAt bump)', (
     const beforeReg = await getRegistry();
     const beforeUpdatedAt = beforeReg[uuid]!.updatedAt;
 
-    // Wait at least 1ms to guarantee a strict timestamp increase
     await new Promise((r) => setTimeout(r, 2));
     await updateItem(uuid, { title: 'B' });
 
     const afterReg = await getRegistry();
-    expect(afterReg[uuid]).toBeDefined(); // same UUID still present
+    expect(afterReg[uuid]).toBeDefined();
     expect(afterReg[uuid]?.title).toBe('B');
     expect(afterReg[uuid]?.updatedAt).toBeGreaterThan(beforeUpdatedAt);
   });
@@ -69,7 +77,7 @@ describe('deleteItem + reconstructInstructions (FND-03 / D-18 tombstone semantic
     await deleteItem(uuid);
 
     const reg = await getRegistry();
-    expect(reg[uuid]).toBeDefined(); // entry stays in place
+    expect(reg[uuid]).toBeDefined();
     expect(reg[uuid]?.deletedAt).toBeGreaterThan(0);
     expect(reg[uuid]?.deletedAt).toBeGreaterThanOrEqual(reg[uuid]!.updatedAt);
   });
@@ -83,13 +91,13 @@ describe('deleteItem + reconstructInstructions (FND-03 / D-18 tombstone semantic
   });
 
   it('tie case (deletedAt === updatedAt) → excluded (D-06)', async () => {
-    // Manually construct a tied registry record
+    // Manually construct a tied registry record via Drive cache
     const uuid = crypto.randomUUID();
     const t = 1000;
     const reg: SyncRegistry = {
       [uuid]: { title: 'A', updatedAt: t, deletedAt: t, chunks: 0 },
     };
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: reg });
+    await chrome.storage.local.set({ [DRIVE_CACHE_KEY]: makeDriveCache(reg) });
 
     const arr = await reconstructInstructions();
     expect(arr.find((i) => i.uuid === uuid)).toBeUndefined();
@@ -99,7 +107,7 @@ describe('deleteItem + reconstructInstructions (FND-03 / D-18 tombstone semantic
 describe('applyRemote (Recipe 9: tombstone resurrection rejection)', () => {
   it('older live remote updatedAt does NOT resurrect a newer local tombstone', async () => {
     const uuid = await createItem({ title: 'A', text: 'a' });
-    await deleteItem(uuid); // local has deletedAt = ~now
+    await deleteItem(uuid);
 
     const remote: SyncRegistry = {
       [uuid]: { title: 'A', updatedAt: 0, deletedAt: null, chunks: 1 },
@@ -107,7 +115,7 @@ describe('applyRemote (Recipe 9: tombstone resurrection rejection)', () => {
     await applyRemote(remote);
 
     const reg = await getRegistry();
-    expect(reg[uuid]?.deletedAt).toBeGreaterThan(0); // tombstone preserved
+    expect(reg[uuid]?.deletedAt).toBeGreaterThan(0);
     const arr = await reconstructInstructions();
     expect(arr.find((i) => i.uuid === uuid)).toBeUndefined();
   });
@@ -119,23 +127,28 @@ describe('applyRemote (Recipe 9: tombstone resurrection rejection)', () => {
     const localReg = await getRegistry();
     const remoteUpdatedAt = (localReg[uuid]?.deletedAt ?? 0) + 60_000;
 
-    // For revival, we also need the remote to provide chunks for the body.
-    // Pre-populate the body keys for the remote scenario.
-    const newUuid = uuid;
-    await chrome.storage.sync.set({
-      [`${BODY_KEY_PREFIX}${newUuid}:c0`]: JSON.stringify({ text: 'revived' }),
+    // Seed the Drive cache with the body chunk for the revived item
+    const existingCache = await getDriveCache() ?? { fileId: '', modifiedTime: '', data: {} };
+    await chrome.storage.local.set({
+      [DRIVE_CACHE_KEY]: {
+        ...existingCache,
+        data: {
+          ...existingCache.data,
+          [`${BODY_KEY_PREFIX}${uuid}:c0`]: JSON.stringify({ text: 'revived' }),
+        },
+      },
     });
 
     const remote: SyncRegistry = {
-      [newUuid]: { title: 'A', updatedAt: remoteUpdatedAt, deletedAt: null, chunks: 1 },
+      [uuid]: { title: 'A', updatedAt: remoteUpdatedAt, deletedAt: null, chunks: 1 },
     };
     await applyRemote(remote);
 
     const reg = await getRegistry();
-    expect(reg[newUuid]?.deletedAt).toBeNull(); // overridden — alive again
-    expect(reg[newUuid]?.updatedAt).toBe(remoteUpdatedAt);
+    expect(reg[uuid]?.deletedAt).toBeNull();
+    expect(reg[uuid]?.updatedAt).toBe(remoteUpdatedAt);
     const arr = await reconstructInstructions();
-    expect(arr.find((i) => i.uuid === newUuid)).toBeDefined();
+    expect(arr.find((i) => i.uuid === uuid)).toBeDefined();
   });
 
   it('remote with newer tombstone wins over local live record', async () => {
@@ -163,7 +176,7 @@ describe('reconstructInstructions body round-trip (FND-05)', () => {
     const arr = await reconstructInstructions();
     const found = arr.find((i) => i.uuid === uuid);
     expect(found).toBeDefined();
-    expect(found?.text).toBe(longText); // bit-exact recovery
+    expect(found?.text).toBe(longText);
   });
 });
 
@@ -180,11 +193,11 @@ describe('updateItem stale-chunk cleanup', () => {
     const afterReg = await getRegistry();
     expect(afterReg[uuid]?.chunks).toBe(1);
 
-    // Stale chunks beyond c0 should be removed
+    // Stale chunks beyond c0 should be absent from Drive cache
+    const cache = await getDriveCache();
     for (let i = 1; i < beforeChunks; i++) {
       const key = `${BODY_KEY_PREFIX}${uuid}:c${i}`;
-      const r = await chrome.storage.sync.get(key);
-      expect(r[key]).toBeUndefined();
+      expect(cache?.data[key]).toBeUndefined();
     }
   });
 });

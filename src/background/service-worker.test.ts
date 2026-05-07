@@ -8,7 +8,7 @@ import {
   SYNC_PENDING_KEY,
   PENDING_MERGES_KEY,
 } from './sync-state';
-import { META_KEY, PENDING_MERGE_QUEUE_CAP } from '../shared/constants';
+import { META_LOCAL_KEY, PENDING_MERGE_QUEUE_CAP } from '../shared/constants';
 import type { SyncMeta, SyncPendingSentinel, PendingMerge } from '../shared/types';
 
 beforeEach(() => {
@@ -20,29 +20,29 @@ describe('initializeMeta (FND-04, D-10 write-if-absent)', () => {
   it('writes default meta on first install when sysins:meta is absent', async () => {
     await initializeMeta();
 
-    const r = await chrome.storage.sync.get(META_KEY);
-    const meta = r[META_KEY] as SyncMeta;
+    const r = await chrome.storage.local.get(META_LOCAL_KEY);
+    const meta = r[META_LOCAL_KEY] as SyncMeta;
     expect(meta).toEqual({ schemaVersion: 1, lastPushAt: 0, lastPullAt: 0 });
   });
 
   it('does NOT overwrite existing meta with non-default lastPushAt', async () => {
     const preExisting: SyncMeta = { schemaVersion: 1, lastPushAt: 12345, lastPullAt: 67890 };
-    await chrome.storage.sync.set({ [META_KEY]: preExisting });
+    await chrome.storage.local.set({ [META_LOCAL_KEY]: preExisting });
 
     await initializeMeta();
 
-    const r = await chrome.storage.sync.get(META_KEY);
-    expect(r[META_KEY]).toEqual(preExisting); // unchanged — D-10
+    const r = await chrome.storage.local.get(META_LOCAL_KEY);
+    expect(r[META_LOCAL_KEY]).toEqual(preExisting); // unchanged — D-10
   });
 
   it('does NOT overwrite an ahead-version meta (schemaVersion: 2)', async () => {
     const ahead = { schemaVersion: 2, lastPushAt: 0, lastPullAt: 0 };
-    await chrome.storage.sync.set({ [META_KEY]: ahead });
+    await chrome.storage.local.set({ [META_LOCAL_KEY]: ahead });
 
     await initializeMeta();
 
-    const r = await chrome.storage.sync.get(META_KEY);
-    expect(r[META_KEY]).toEqual(ahead); // unchanged — schema-guard handles at next read
+    const r = await chrome.storage.local.get(META_LOCAL_KEY);
+    expect(r[META_LOCAL_KEY]).toEqual(ahead); // unchanged — schema-guard handles at next read
   });
 });
 

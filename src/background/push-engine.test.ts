@@ -1,7 +1,6 @@
 /**
  * TDD tests for push-engine.ts
- * RED phase: all tests written before implementation exists.
- * Covers all 8 behavior cases from the plan.
+ * Updated for Drive backend: getRegistry() reads from Drive cache in chrome.storage.local.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -17,12 +16,17 @@ import {
   BODY_KEY_PREFIX,
   LAST_OBSERVED_KEY,
   PUSH_BASELINE_KEY,
+  DRIVE_CACHE_KEY,
 } from '../shared/constants';
 import { LAST_PUSHED_KEY, SYNC_PENDING_KEY } from './sync-state';
 import { shortHash } from './hash';
-import type { RawInstruction, SyncRegistry, LastPushedSnapshot } from '../shared/types';
+import type { RawInstruction, SyncRegistry, LastPushedSnapshot, DriveCache } from '../shared/types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function makeDriveCache(registry: SyncRegistry): DriveCache {
+  return { fileId: '', modifiedTime: '', data: { [REGISTRY_KEY]: registry } };
+}
 
 beforeEach(() => {
   fakeBrowser.reset();
@@ -73,11 +77,11 @@ describe('Case 2: existing item, unchanged (titleHash + bodyHash match lastPushe
     const titleHash = await shortHash('A');
     const bodyHash = await shortHash(bodyJson);
 
-    // Pre-populate registry in sync storage
+    // Pre-populate registry in Drive cache
     const registry: SyncRegistry = {
       [uuid]: { title: 'A', updatedAt: 100, deletedAt: null, chunks: 1 },
     };
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: registry });
+    await chrome.storage.local.set({ [DRIVE_CACHE_KEY]: makeDriveCache(registry) });
 
     // Pre-populate lastPushed in local storage
     const lastPushed: LastPushedSnapshot = {
@@ -106,7 +110,7 @@ describe('Case 3: existing item, text changed', () => {
     const registry: SyncRegistry = {
       [uuid]: { title: 'A', updatedAt: 100, deletedAt: null, chunks: 1 },
     };
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: registry });
+    await chrome.storage.local.set({ [DRIVE_CACHE_KEY]: makeDriveCache(registry) });
 
     const lastPushed: LastPushedSnapshot = {
       [uuid]: { titleHash, bodyHash: oldBodyHash, updatedAt: 100 },
@@ -143,11 +147,8 @@ describe('Case 4: item absent from payload gets tombstoned', () => {
       [uuidA]: { title: 'A', updatedAt: 100, deletedAt: null, chunks: 1 },
       [uuidB]: { title: 'B', updatedAt: 100, deletedAt: null, chunks: 1 },
     };
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: registry });
+    await chrome.storage.local.set({ [DRIVE_CACHE_KEY]: makeDriveCache(registry) });
 
-    // Simulate both items having been previously flushed by this device.
-    // Without pushBaseline entries, items that arrived via remote pull would not be
-    // tombstoned (D-18 guard) — seeding here models the post-flush device state.
     const lastPushed: LastPushedSnapshot = {
       [uuidA]: { titleHash: 'ha', bodyHash: 'ba', updatedAt: 100 },
       [uuidB]: { titleHash: 'hb', bodyHash: 'bb', updatedAt: 100 },
@@ -207,15 +208,15 @@ describe('Case 5: item with > 7KB text gets chunked', () => {
 describe('Case 6: empty payload guard', () => {
   it('returns early without writing PENDING_WRITE_KEY when payload is empty', async () => {
     // Plant a registry entry to ensure tombstone logic would normally fire
-    await chrome.storage.sync.set({
-      [REGISTRY_KEY]: {
+    await chrome.storage.local.set({
+      [DRIVE_CACHE_KEY]: makeDriveCache({
         'some-uuid-0000-0000-0000-000000000001': {
           title: 'X',
           updatedAt: 100,
           deletedAt: null,
           chunks: 1,
         },
-      } as SyncRegistry,
+      }),
     });
 
     await diffAndAccumulate([]);
@@ -235,7 +236,7 @@ describe('Case 7: tombstoned item gets fresh UUID, not resurrected', () => {
     const registry: SyncRegistry = {
       [tombUuid]: { title: 'A', updatedAt: 100, deletedAt: 200, chunks: 0 },
     };
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: registry });
+    await chrome.storage.local.set({ [DRIVE_CACHE_KEY]: makeDriveCache(registry) });
 
     // Payload has item with same title 'A' — should NOT revive the tombstone
     const payload: RawInstruction[] = [{ title: 'A', text: 'new content' }];
@@ -338,15 +339,14 @@ describe('persistPendingWrite / drainPendingWrite / clearPendingWrite', () => {
 // ---------------------------------------------------------------------------
 describe('Case 9: tombstone survives intermediate-state burst', () => {
   it('tombstones the old entry when a rename is preceded by a 2-item intermediate payload', async () => {
-    // Simulate: sync has "A" alive from a previous flush.
+    // Simulate: Drive cache has "A" alive from a previous flush.
     const uuidA = 'uuid-rename-old-000000-0000-000000000001';
     const registry: SyncRegistry = {
       [uuidA]: { title: 'A', updatedAt: 100, deletedAt: null, chunks: 1 },
     };
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: registry });
+    await chrome.storage.local.set({ [DRIVE_CACHE_KEY]: makeDriveCache(registry) });
 
     // AI Studio fires an intermediate setItem with BOTH old ("A") and new ("B")
-    // entries coexisting briefly during the rename.
     await diffAndAccumulate([
       { title: 'A', text: 'old text' },
       { title: 'B', text: 'new text' },
@@ -384,8 +384,8 @@ describe('UUID stability', () => {
     const reg1 = batch1[REGISTRY_KEY] as SyncRegistry;
     const uuid1 = Object.keys(reg1).find((k) => reg1[k]!.title === 'Stable')!;
 
-    // Simulate alarm-flush: write the registry into sync storage and clear pending
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: reg1 });
+    // Simulate alarm-flush: write the registry into Drive cache and clear pending
+    await chrome.storage.local.set({ [DRIVE_CACHE_KEY]: makeDriveCache(reg1) });
     await chrome.storage.local.remove(PENDING_WRITE_KEY);
 
     // Second call with same title, changed text → should reuse uuid1

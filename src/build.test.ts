@@ -52,9 +52,10 @@ describe('DIST-02: manifest permissions', () => {
     expect(perms).toEqual(['alarms', 'identity', 'identity.email', 'scripting', 'storage']);
   });
 
-  it('host_permissions is exactly ["https://aistudio.google.com/*"]', () => {
+  it('host_permissions includes aistudio.google.com and googleapis.com', () => {
     const m = loadManifest();
-    expect(m.host_permissions).toEqual(['https://aistudio.google.com/*']);
+    const hosts = (m.host_permissions ?? []).slice().sort();
+    expect(hosts).toEqual(['https://aistudio.google.com/*', 'https://www.googleapis.com/*'].sort());
   });
 
   it('manifest does not declare <all_urls> anywhere', () => {

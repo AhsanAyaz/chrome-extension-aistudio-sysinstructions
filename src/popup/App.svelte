@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { SyncStatus, SyncRegistry } from '../shared/types';
+  import type { SyncStatus, SyncRegistry, DriveCache } from '../shared/types';
   import { SYNC_STATUS_KEY } from '../background/sync-state';
-  import { REGISTRY_KEY, BODY_KEY_PREFIX } from '../shared/constants';
+  import { REGISTRY_KEY, BODY_KEY_PREFIX, DRIVE_CACHE_KEY } from '../shared/constants';
   import StatusHeader from './StatusHeader.svelte';
   import InstructionList from './InstructionList.svelte';
   import ActionRow from './ActionRow.svelte';
@@ -33,20 +33,18 @@
         syncStatus =
           (changes[SYNC_STATUS_KEY]!.newValue as SyncStatus) ?? { state: 'idle', lastSyncAt: 0 };
       }
-      if (area === 'sync' && REGISTRY_KEY in changes) {
-        registry = (changes[REGISTRY_KEY]!.newValue as SyncRegistry) ?? {};
+      if (area === 'local' && DRIVE_CACHE_KEY in changes) {
+        const cache = changes[DRIVE_CACHE_KEY]!.newValue as DriveCache | undefined;
+        registry = (cache?.data[REGISTRY_KEY] as SyncRegistry | undefined) ?? {};
       }
     }
     chrome.storage.onChanged.addListener(onChanged);
 
-    // Async hydration as fire-and-forget IIFE — onMount must return () => void, not Promise
     void (async () => {
-      const [localData, syncData] = await Promise.all([
-        chrome.storage.local.get(SYNC_STATUS_KEY),
-        chrome.storage.sync.get(REGISTRY_KEY),
-      ]);
+      const localData = await chrome.storage.local.get([SYNC_STATUS_KEY, DRIVE_CACHE_KEY]);
       syncStatus = (localData[SYNC_STATUS_KEY] as SyncStatus) ?? { state: 'idle', lastSyncAt: 0 };
-      registry = (syncData[REGISTRY_KEY] as SyncRegistry) ?? {};
+      const cache = localData[DRIVE_CACHE_KEY] as DriveCache | undefined;
+      registry = (cache?.data[REGISTRY_KEY] as SyncRegistry | undefined) ?? {};
     })();
 
     return () => chrome.storage.onChanged.removeListener(onChanged);
@@ -85,7 +83,10 @@
         bodyKeys.push(`${BODY_KEY_PREFIX}${uuid}:c${i}`);
       }
     }
-    const bodyData = bodyKeys.length > 0 ? await chrome.storage.sync.get(bodyKeys) : {};
+    const cacheData = bodyKeys.length > 0
+      ? ((await chrome.storage.local.get(DRIVE_CACHE_KEY))[DRIVE_CACHE_KEY] as DriveCache | undefined)?.data ?? {}
+      : {};
+    const bodyData = cacheData;
 
     const items = liveUuids.map(([uuid, rec]) => {
       const keys = Array.from({ length: rec.chunks }, (_, i) => `${BODY_KEY_PREFIX}${uuid}:c${i}`);

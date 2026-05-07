@@ -1,8 +1,7 @@
 /**
  * TDD tests for bootstrap.ts
- * RED phase: all tests written before implementation exists.
- * Covers 6 behavior cases for handleLsBootstrap (BOOT-01, BOOT-02)
- * plus mergeRegistries pure function unit tests.
+ * Updated for Drive backend: flushToDrive() replaces chrome.storage.sync.set().
+ * Remote registry is seeded via Drive cache in chrome.storage.local.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -12,14 +11,22 @@ import {
   REGISTRY_KEY,
   BOOTSTRAP_NEEDED_KEY,
   BODY_KEY_PREFIX,
+  DRIVE_CACHE_KEY,
 } from '../shared/constants';
-import type { SyncRegistry, RawInstruction, RegistryRecord } from '../shared/types';
+import type { SyncRegistry, RawInstruction, RegistryRecord, DriveCache } from '../shared/types';
 
-// ---------------------------------------------------------------------------
-// Test setup — mirrors pull-engine.test.ts pattern
-// ---------------------------------------------------------------------------
+vi.mock('./drive-client', () => ({
+  flushToDrive: vi.fn().mockResolvedValue(undefined),
+  readDriveCache: vi.fn(),
+  writeDriveCache: vi.fn().mockResolvedValue(undefined),
+  pollDriveForChanges: vi.fn().mockResolvedValue(null),
+  getAuthToken: vi.fn(),
+  readDriveFile: vi.fn(),
+  writeDriveFile: vi.fn(),
+}));
 
-// Typed helper to mock chrome.tabs.query — avoids overload ambiguity.
+import * as driveClient from './drive-client';
+
 function mockTabsQuery(tabs: chrome.tabs.Tab[]): void {
   vi.spyOn(chrome.tabs, 'query').mockImplementation(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,15 +34,37 @@ function mockTabsQuery(tabs: chrome.tabs.Tab[]): void {
   );
 }
 
+function makeDriveCache(registry: SyncRegistry, bodies: Record<string, string> = {}): DriveCache {
+  return {
+    fileId: 'file-id-test',
+    modifiedTime: new Date().toISOString(),
+    data: { [REGISTRY_KEY]: registry, ...bodies },
+  };
+}
+
 beforeEach(() => {
   fakeBrowser.reset();
+  vi.clearAllMocks();
   vi.restoreAllMocks();
   vi.spyOn(chrome.action, 'setBadgeText').mockResolvedValue(undefined);
   vi.spyOn(chrome.action, 'setBadgeBackgroundColor').mockResolvedValue(undefined);
   _resetForTesting();
-
-  // Default: no active tab (bootstrap tests focus on sync write, not tab delivery)
   mockTabsQuery([]);
+
+  // readDriveCache reads from chrome.storage.local — delegate to actual storage
+  vi.mocked(driveClient.readDriveCache).mockImplementation(async () => {
+    const r = await chrome.storage.local.get(DRIVE_CACHE_KEY);
+    return (r[DRIVE_CACHE_KEY] as DriveCache | undefined) ?? null;
+  });
+
+  // flushToDrive updates local cache with the merged batch so reconstructInstructions works
+  vi.mocked(driveClient.flushToDrive).mockImplementation(async (batch) => {
+    const r = await chrome.storage.local.get(DRIVE_CACHE_KEY);
+    const existing = (r[DRIVE_CACHE_KEY] as DriveCache | undefined) ?? { fileId: '', modifiedTime: '', data: {} };
+    await chrome.storage.local.set({
+      [DRIVE_CACHE_KEY]: { ...existing, data: { ...existing.data, ...batch } },
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -103,13 +132,9 @@ describe('mergeRegistries: pure function', () => {
 
 // ---------------------------------------------------------------------------
 // Case 1 — local-only items (no remote registry)
-// handleLsBootstrap assigns UUIDs, writes ONE batched sync.set, clears BOOTSTRAP_NEEDED_KEY
 // ---------------------------------------------------------------------------
 describe('Case 1: local-only items — no remote registry', () => {
-  it('assigns fresh UUIDs and writes registry + body chunks in ONE sync.set, then clears flag', async () => {
-    const syncSetSpy = vi.spyOn(chrome.storage.sync, 'set').mockResolvedValue(undefined);
-
-    // Pre-plant the bootstrap flag (would be written by onInstalled)
+  it('assigns fresh UUIDs and writes registry + body chunks in ONE flushToDrive call, then clears flag', async () => {
     await fakeBrowser.storage.local.set({
       [BOOTSTRAP_NEEDED_KEY]: { triggeredAt: Date.now() },
     });
@@ -121,25 +146,20 @@ describe('Case 1: local-only items — no remote registry', () => {
 
     await handleLsBootstrap(payload);
 
-    // Exactly ONE chrome.storage.sync.set call (Hard Rule 3)
-    expect(syncSetSpy).toHaveBeenCalledOnce();
+    // Exactly ONE flushToDrive call (Hard Rule 3 equivalent)
+    expect(driveClient.flushToDrive).toHaveBeenCalledOnce();
 
-    const batchArg = syncSetSpy.mock.calls[0]![0];
+    const batchArg = vi.mocked(driveClient.flushToDrive).mock.calls[0]![0];
     const batch = batchArg as Record<string, unknown>;
 
     // Registry must be present
     const registry = batch[REGISTRY_KEY] as SyncRegistry;
     expect(registry).toBeDefined();
 
-    const uuids = Object.keys(registry);
+    const uuids = Object.keys(registry).filter((k) => registry[k]!.deletedAt === null);
     expect(uuids).toHaveLength(2);
 
-    // Both entries must be live (no tombstone)
-    for (const uuid of uuids) {
-      expect(registry[uuid]?.deletedAt).toBeNull();
-    }
-
-    // Body chunk c0 must be present for each UUID
+    // Body chunk c0 must be present for each live UUID
     for (const uuid of uuids) {
       const bodyKey = `${BODY_KEY_PREFIX}${uuid}:c0`;
       expect(batch[bodyKey]).toBeDefined();
@@ -153,40 +173,29 @@ describe('Case 1: local-only items — no remote registry', () => {
 
 // ---------------------------------------------------------------------------
 // Case 2 — title match reuses remote UUID (BOOT-02)
-// Local item title="Foo" matches remote live entry uuid="abc-123" title="Foo"
 // ---------------------------------------------------------------------------
 describe('Case 2: title match reuses remote UUID (BOOT-02)', () => {
   it('assigns remote UUID when local title matches a live remote entry', async () => {
     const remoteUuid = 'abc-12300-0000-0000-000000000001';
     const remoteRegistry: SyncRegistry = {
-      [remoteUuid]: {
-        title: 'Foo',
-        updatedAt: 1000,
-        deletedAt: null,
-        chunks: 1,
-      },
+      [remoteUuid]: { title: 'Foo', updatedAt: 1000, deletedAt: null, chunks: 1 },
     };
 
-    // Seed remote registry in sync storage
-    await fakeBrowser.storage.sync.set({ [REGISTRY_KEY]: remoteRegistry });
-    // Seed the body chunk for reconstructInstructions
-    await fakeBrowser.storage.sync.set({
-      [`${BODY_KEY_PREFIX}${remoteUuid}:c0`]: JSON.stringify({ text: 'remote body' }),
-    });
-
-    const syncSetSpy = vi.spyOn(chrome.storage.sync, 'set').mockResolvedValue(undefined);
-
+    // Seed remote registry in Drive cache
     await fakeBrowser.storage.local.set({
+      [DRIVE_CACHE_KEY]: makeDriveCache(remoteRegistry, {
+        [`${BODY_KEY_PREFIX}${remoteUuid}:c0`]: JSON.stringify({ text: 'remote body' }),
+      }),
       [BOOTSTRAP_NEEDED_KEY]: { triggeredAt: Date.now() },
     });
 
     const payload: RawInstruction[] = [{ title: 'Foo', text: 'local body' }];
     await handleLsBootstrap(payload);
 
-    expect(syncSetSpy).toHaveBeenCalledOnce();
+    expect(driveClient.flushToDrive).toHaveBeenCalledOnce();
 
-    const batchArg2 = syncSetSpy.mock.calls[0]![0];
-    const batch = batchArg2 as Record<string, unknown>;
+    const batchArg = vi.mocked(driveClient.flushToDrive).mock.calls[0]![0];
+    const batch = batchArg as Record<string, unknown>;
     const registry = batch[REGISTRY_KEY] as SyncRegistry;
 
     // The remote UUID must be present in the merged registry
@@ -200,7 +209,6 @@ describe('Case 2: title match reuses remote UUID (BOOT-02)', () => {
 
 // ---------------------------------------------------------------------------
 // Case 3 — title collision (D-06): first by updatedAt desc wins
-// Remote has two live entries both with title="Foo"; highest updatedAt wins
 // ---------------------------------------------------------------------------
 describe('Case 3: title collision (D-06) — first by updatedAt desc wins', () => {
   it('assigns highest-updatedAt UUID when two remote entries share a title', async () => {
@@ -212,21 +220,18 @@ describe('Case 3: title collision (D-06) — first by updatedAt desc wins', () =
       [uuidB]: { title: 'Foo', updatedAt: 1000, deletedAt: null, chunks: 0 },
     };
 
-    await fakeBrowser.storage.sync.set({ [REGISTRY_KEY]: remoteRegistry });
-
-    const syncSetSpy = vi.spyOn(chrome.storage.sync, 'set').mockResolvedValue(undefined);
-
     await fakeBrowser.storage.local.set({
+      [DRIVE_CACHE_KEY]: makeDriveCache(remoteRegistry),
       [BOOTSTRAP_NEEDED_KEY]: { triggeredAt: Date.now() },
     });
 
     const payload: RawInstruction[] = [{ title: 'Foo', text: 'foo body' }];
     await handleLsBootstrap(payload);
 
-    expect(syncSetSpy).toHaveBeenCalledOnce();
+    expect(driveClient.flushToDrive).toHaveBeenCalledOnce();
 
-    const batchArg3 = syncSetSpy.mock.calls[0]![0];
-    const registry = (batchArg3 as Record<string, unknown>)[REGISTRY_KEY] as SyncRegistry;
+    const batchArg = vi.mocked(driveClient.flushToDrive).mock.calls[0]![0];
+    const registry = (batchArg as Record<string, unknown>)[REGISTRY_KEY] as SyncRegistry;
 
     // uuidA (highest updatedAt) must be present in merged registry for "Foo"
     expect(registry[uuidA]).toBeDefined();
@@ -239,38 +244,33 @@ describe('Case 3: title collision (D-06) — first by updatedAt desc wins', () =
 
 // ---------------------------------------------------------------------------
 // Case 4 — tombstone beats local live item (Hard Rule 10)
-// Remote tombstoned entry wins; reconstructInstructions excludes "Bar"
 // ---------------------------------------------------------------------------
 describe('Case 4: tombstone beats local live item (Hard Rule 10 via mergeRegistries)', () => {
   it('remote tombstone propagates into merged registry and excludes item from live payload', async () => {
     const tombUuid = 'uuid-tomb-0000-0000-0000-000000000001';
-    const futureTs = Date.now() + 100_000; // deletedAt far in future > local updatedAt
+    const futureTs = Date.now() + 100_000;
 
     const remoteRegistry: SyncRegistry = {
       [tombUuid]: {
         title: 'Bar',
         updatedAt: 1000,
-        deletedAt: futureTs, // tombstone wins — deletedAt > any local updatedAt
+        deletedAt: futureTs,
         chunks: 0,
       },
     };
 
-    await fakeBrowser.storage.sync.set({ [REGISTRY_KEY]: remoteRegistry });
-
-    const syncSetSpy = vi.spyOn(chrome.storage.sync, 'set').mockResolvedValue(undefined);
-
     await fakeBrowser.storage.local.set({
+      [DRIVE_CACHE_KEY]: makeDriveCache(remoteRegistry),
       [BOOTSTRAP_NEEDED_KEY]: { triggeredAt: Date.now() },
     });
 
-    // Local has a live item with title="Bar" — tombstone should win
     const payload: RawInstruction[] = [{ title: 'Bar', text: 'bar body' }];
     await handleLsBootstrap(payload);
 
-    expect(syncSetSpy).toHaveBeenCalledOnce();
+    expect(driveClient.flushToDrive).toHaveBeenCalledOnce();
 
-    const batchArg4 = syncSetSpy.mock.calls[0]![0];
-    const registry = (batchArg4 as Record<string, unknown>)[REGISTRY_KEY] as SyncRegistry;
+    const batchArg = vi.mocked(driveClient.flushToDrive).mock.calls[0]![0];
+    const registry = (batchArg as Record<string, unknown>)[REGISTRY_KEY] as SyncRegistry;
 
     // The tombstoned entry must be present with deletedAt set
     expect(registry[tombUuid]?.deletedAt).toBe(futureTs);
@@ -283,20 +283,17 @@ describe('Case 4: tombstone beats local live item (Hard Rule 10 via mergeRegistr
 
 // ---------------------------------------------------------------------------
 // Case 5 — empty local payload (Hard Rule 4)
-// handleLsBootstrap([]) → returns immediately, no sync.set, flag NOT cleared
 // ---------------------------------------------------------------------------
 describe('Case 5: empty local payload (Hard Rule 4)', () => {
   it('returns immediately without any side effects when payload is empty', async () => {
-    const syncSetSpy = vi.spyOn(chrome.storage.sync, 'set').mockResolvedValue(undefined);
-
     await fakeBrowser.storage.local.set({
       [BOOTSTRAP_NEEDED_KEY]: { triggeredAt: Date.now() },
     });
 
     await handleLsBootstrap([]);
 
-    // No sync.set call
-    expect(syncSetSpy).not.toHaveBeenCalled();
+    // No flushToDrive call
+    expect(driveClient.flushToDrive).not.toHaveBeenCalled();
 
     // Flag must still be present (not cleared — retry is possible)
     const localR = await chrome.storage.local.get(BOOTSTRAP_NEEDED_KEY);
@@ -306,21 +303,19 @@ describe('Case 5: empty local payload (Hard Rule 4)', () => {
 
 // ---------------------------------------------------------------------------
 // Case 6 — flag cleared only after success (Pitfall 3)
-// When chrome.storage.sync.set throws, BOOTSTRAP_NEEDED_KEY stays in local storage
 // ---------------------------------------------------------------------------
-describe('Case 6: flag preserved when sync.set throws (Pitfall 3)', () => {
-  it('does NOT clear BOOTSTRAP_NEEDED_KEY when chrome.storage.sync.set rejects', async () => {
-    vi.spyOn(chrome.storage.sync, 'set').mockRejectedValueOnce(new Error('quota exceeded'));
+describe('Case 6: flag preserved when flushToDrive throws (Pitfall 3)', () => {
+  it('does NOT clear BOOTSTRAP_NEEDED_KEY when flushToDrive rejects', async () => {
+    vi.mocked(driveClient.flushToDrive).mockRejectedValueOnce(new Error('network error'));
 
     await fakeBrowser.storage.local.set({
       [BOOTSTRAP_NEEDED_KEY]: { triggeredAt: Date.now() },
     });
 
-    // handleLsBootstrap should propagate the error (or swallow it); either way flag stays
     try {
       await handleLsBootstrap([{ title: 'Test', text: 'test body' }]);
     } catch {
-      // Expected — sync.set threw
+      // Expected — flushToDrive threw
     }
 
     // Flag must still be present in local storage (not cleared)

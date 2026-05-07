@@ -1,16 +1,16 @@
 /**
  * TDD tests for alarm-flush.ts
- * RED phase: all tests written before implementation exists.
- * Covers all 8 behavior cases from the plan.
+ * Updated for Drive backend: flushToDrive() replaces chrome.storage.sync.set().
  *
  * Case 1: scheduleFlush called once → one alarm named 'sysins-flush'
  * Case 2: scheduleFlush called 5× → still exactly ONE alarm (debounce)
- * Case 3: flushPendingWrite with empty pendingWrite → no-op
- * Case 4: flushPendingWrite with valid batch → sync.set called, lastPushed written, pendingWrite cleared, status idle
- * Case 5: sync.set throws rate-limit error → amber badge, RATE_LIMITED, retry alarm
- * Case 6: sync.set throws quota-exceeded → red badge, QUOTA_EXCEEDED, no retry alarm
- * Case 7: sync.set throws other error → red badge, STRICT_VALIDATION_FAIL, no retry alarm
- * Case 8: stale body keys from chunk reduction → sync.remove called for stale keys
+ * Case 3: flushPendingWrite with empty pendingWrite → no-op (flushToDrive not called)
+ * Case 4: flushPendingWrite with valid batch → flushToDrive called, lastPushed written, pendingWrite cleared, status idle
+ * Case 5: flushToDrive throws 429 error → amber badge, RATE_LIMITED, retry alarm
+ * Case 6: flushToDrive throws QUOTA error → red badge, QUOTA_EXCEEDED, no retry alarm
+ * Case 7: flushToDrive throws other error → red badge, STRICT_VALIDATION_FAIL, no retry alarm
+ * Case 8: stale body key cleanup handled inside flushToDrive → alarm-flush passes batch through
+ * Case 9: tombstone body key cleanup handled inside flushToDrive → alarm-flush passes batch through
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -24,11 +24,23 @@ import {
 import { LAST_PUSHED_KEY, SYNC_STATUS_KEY, SYNC_PENDING_KEY } from './sync-state';
 import type { SyncRegistry, SyncStatus } from '../shared/types';
 
+vi.mock('./drive-client', () => ({
+  flushToDrive: vi.fn().mockResolvedValue(undefined),
+  readDriveCache: vi.fn().mockResolvedValue(null),
+  writeDriveCache: vi.fn().mockResolvedValue(undefined),
+  pollDriveForChanges: vi.fn().mockResolvedValue(null),
+  getAuthToken: vi.fn(),
+  readDriveFile: vi.fn(),
+  writeDriveFile: vi.fn(),
+}));
+
+import * as driveClient from './drive-client';
+
 beforeEach(() => {
   fakeBrowser.reset();
+  vi.clearAllMocks();
   vi.restoreAllMocks();
-  // fakeBrowser does not implement chrome.action.setBadgeText / setBadgeBackgroundColor.
-  // Stub them globally so they don't throw "not implemented" in any test.
+  vi.mocked(driveClient.flushToDrive).mockResolvedValue(undefined);
   vi.spyOn(chrome.action, 'setBadgeText').mockResolvedValue(undefined);
   vi.spyOn(chrome.action, 'setBadgeBackgroundColor').mockResolvedValue(undefined);
 });
@@ -40,7 +52,6 @@ describe('Case 1: scheduleFlush creates one alarm', () => {
   it('creates a sysins-flush alarm with delayInMinutes ≈ 0.5', async () => {
     scheduleFlush();
 
-    // Give the callback time to execute (fakeBrowser alarms are synchronous)
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     const alarm = await fakeBrowser.alarms.get(FLUSH_ALARM_NAME);
@@ -65,7 +76,6 @@ describe('Case 2: scheduleFlush debounce — 5 calls → 1 alarm', () => {
     const alarm = await fakeBrowser.alarms.get(FLUSH_ALARM_NAME);
     expect(alarm).toBeDefined();
 
-    // fakeBrowser.alarms.getAll() should show only one alarm named sysins-flush
     const allAlarms = await fakeBrowser.alarms.getAll();
     const flushAlarms = allAlarms.filter((a: chrome.alarms.Alarm) => a.name === FLUSH_ALARM_NAME);
     expect(flushAlarms).toHaveLength(1);
@@ -76,24 +86,20 @@ describe('Case 2: scheduleFlush debounce — 5 calls → 1 alarm', () => {
 // Case 3: flushPendingWrite — empty pendingWrite → no-op
 // ---------------------------------------------------------------------------
 describe('Case 3: flushPendingWrite with no pendingWrite → no-op', () => {
-  it('does not call chrome.storage.sync.set when PENDING_WRITE_KEY is absent', async () => {
-    const setSpy = vi.spyOn(chrome.storage.sync, 'set');
-
+  it('does not call flushToDrive when PENDING_WRITE_KEY is absent', async () => {
     await flushPendingWrite();
 
-    expect(setSpy).not.toHaveBeenCalled();
+    expect(driveClient.flushToDrive).not.toHaveBeenCalled();
   });
 
   it('syncStatus remains idle when pendingWrite is absent', async () => {
     await flushPendingWrite();
 
     const r = await chrome.storage.local.get(SYNC_STATUS_KEY);
-    // syncStatus should not have been changed (still default / undefined)
     const status = r[SYNC_STATUS_KEY] as SyncStatus | undefined;
     if (status !== undefined) {
       expect(status.state).toBe('idle');
     }
-    // (If undefined — never written — that's also fine: still "idle by default")
   });
 });
 
@@ -101,7 +107,7 @@ describe('Case 3: flushPendingWrite with no pendingWrite → no-op', () => {
 // Case 4: flushPendingWrite — success path
 // ---------------------------------------------------------------------------
 describe('Case 4: flushPendingWrite — success path', () => {
-  it('calls sync.set once with full batch, writes lastPushed, clears pendingWrite, status idle', async () => {
+  it('calls flushToDrive once with full batch, writes lastPushed, clears pendingWrite, status idle', async () => {
     const uuid = 'uuid-alarm-flush-test-0000-000000000001';
     const registry: SyncRegistry = {
       [uuid]: { title: 'Test', updatedAt: 1000, deletedAt: null, chunks: 1 },
@@ -114,21 +120,16 @@ describe('Case 4: flushPendingWrite — success path', () => {
       [bodyKey]: bodyJson,
     };
 
-    // Persist pendingWrite to local storage
     await chrome.storage.local.set({
       [PENDING_WRITE_KEY]: batch,
       [SYNC_PENDING_KEY]: { batchId: 'test-batch', keys: Object.keys(batch), startedAt: Date.now() },
     });
 
-    const setSpy = vi.spyOn(chrome.storage.sync, 'set');
-
-    // flushPendingWrite is exported directly; the onAlarm listener binding is done in
-    // index.ts (Plan 04). Call the function directly to test its behaviour in isolation.
     await flushPendingWrite();
 
-    // a. sync.set called once with the full batch
-    expect(setSpy).toHaveBeenCalledOnce();
-    expect(setSpy).toHaveBeenCalledWith(batch);
+    // a. flushToDrive called once with the full batch
+    expect(driveClient.flushToDrive).toHaveBeenCalledOnce();
+    expect(vi.mocked(driveClient.flushToDrive).mock.calls[0]![0]).toEqual(batch);
 
     // b. lastPushed written with entry for uuid
     const lr = await chrome.storage.local.get(LAST_PUSHED_KEY);
@@ -157,16 +158,15 @@ describe('Case 5: flushPendingWrite — rate limit failure', () => {
     const registry: SyncRegistry = {
       [uuid]: { title: 'Test', updatedAt: 1000, deletedAt: null, chunks: 1 },
     };
-    const bodyKey = `${BODY_KEY_PREFIX}${uuid}:c0`;
     const batch: Record<string, unknown> = {
       [REGISTRY_KEY]: registry,
-      [bodyKey]: JSON.stringify({ text: 'hi' }),
+      [`${BODY_KEY_PREFIX}${uuid}:c0`]: JSON.stringify({ text: 'hi' }),
     };
 
     await chrome.storage.local.set({ [PENDING_WRITE_KEY]: batch });
 
-    vi.spyOn(chrome.storage.sync, 'set').mockRejectedValueOnce(
-      new Error('MAX_WRITE_OPERATIONS_PER_MINUTE exceeded'),
+    vi.mocked(driveClient.flushToDrive).mockRejectedValueOnce(
+      new Error('429 Too Many Requests'),
     );
 
     const setBadgeTextSpy = vi.spyOn(chrome.action, 'setBadgeText');
@@ -185,7 +185,7 @@ describe('Case 5: flushPendingWrite — rate limit failure', () => {
     const status = sr[SYNC_STATUS_KEY] as SyncStatus;
     expect(status.errorState).toBe('RATE_LIMITED');
 
-    // d. retry alarm exists (1 minute)
+    // d. retry alarm exists
     await new Promise((resolve) => setTimeout(resolve, 0));
     const alarm = await fakeBrowser.alarms.get(FLUSH_ALARM_NAME);
     expect(alarm).toBeDefined();
@@ -212,8 +212,8 @@ describe('Case 6: flushPendingWrite — quota exceeded failure', () => {
 
     await chrome.storage.local.set({ [PENDING_WRITE_KEY]: batch });
 
-    vi.spyOn(chrome.storage.sync, 'set').mockRejectedValueOnce(
-      new Error('QUOTA_BYTES exceeded'),
+    vi.mocked(driveClient.flushToDrive).mockRejectedValueOnce(
+      new Error('storageQuota exceeded'),
     );
 
     const setBadgeTextSpy = vi.spyOn(chrome.action, 'setBadgeText');
@@ -253,7 +253,7 @@ describe('Case 7: flushPendingWrite — other failure', () => {
 
     await chrome.storage.local.set({ [PENDING_WRITE_KEY]: batch });
 
-    vi.spyOn(chrome.storage.sync, 'set').mockRejectedValueOnce(
+    vi.mocked(driveClient.flushToDrive).mockRejectedValueOnce(
       new Error('Network error'),
     );
 
@@ -279,19 +279,13 @@ describe('Case 7: flushPendingWrite — other failure', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Case 8: stale body key cleanup (chunk count decreased)
+// Case 8: stale body key cleanup — handled inside flushToDrive (Drive backend)
+// alarm-flush passes the full batch through; flushToDrive handles cleanup internally
 // ---------------------------------------------------------------------------
-describe('Case 8: stale body key cleanup when chunk count decreased', () => {
-  it('calls sync.remove for stale body keys when chunks count decreased', async () => {
+describe('Case 8: stale body key cleanup delegated to flushToDrive', () => {
+  it('calls flushToDrive with the batch when chunk count decreased', async () => {
     const uuid = 'uuid-alarm-flush-test-stale-000000001';
 
-    // Old registry in sync storage has chunks: 2
-    const oldRegistry: SyncRegistry = {
-      [uuid]: { title: 'Big', updatedAt: 500, deletedAt: null, chunks: 2 },
-    };
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: oldRegistry });
-
-    // New batch has chunks: 1 (text shrunk — one chunk removed)
     const newRegistry: SyncRegistry = {
       [uuid]: { title: 'Big', updatedAt: 1000, deletedAt: null, chunks: 1 },
     };
@@ -302,30 +296,20 @@ describe('Case 8: stale body key cleanup when chunk count decreased', () => {
 
     await chrome.storage.local.set({ [PENDING_WRITE_KEY]: batch });
 
-    const removeSpy = vi.spyOn(chrome.storage.sync, 'remove');
-
     await flushPendingWrite();
 
-    // sync.remove should be called with the stale c1 key
-    const staleKey = `${BODY_KEY_PREFIX}${uuid}:c1`;
-    expect(removeSpy).toHaveBeenCalledWith([staleKey]);
+    expect(driveClient.flushToDrive).toHaveBeenCalledOnce();
+    expect(vi.mocked(driveClient.flushToDrive).mock.calls[0]![0]).toEqual(batch);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Case 9: tombstone body key cleanup
+// Case 9: tombstone body key cleanup — handled inside flushToDrive (Drive backend)
 // ---------------------------------------------------------------------------
-describe('Case 9: body keys removed when item is tombstoned', () => {
-  it('calls sync.remove for all body keys of a newly tombstoned item', async () => {
+describe('Case 9: tombstone body key cleanup delegated to flushToDrive', () => {
+  it('calls flushToDrive with the tombstoned batch', async () => {
     const uuid = 'uuid-alarm-flush-test-tomb-000000001';
 
-    // Old registry in sync has a live item with 1 chunk
-    const oldRegistry: SyncRegistry = {
-      [uuid]: { title: 'Bye', updatedAt: 500, deletedAt: null, chunks: 1 },
-    };
-    await chrome.storage.sync.set({ [REGISTRY_KEY]: oldRegistry });
-
-    // New batch tombstones the item (deletedAt set, chunks unchanged)
     const newRegistry: SyncRegistry = {
       [uuid]: { title: 'Bye', updatedAt: 500, deletedAt: 1000, chunks: 1 },
     };
@@ -335,12 +319,9 @@ describe('Case 9: body keys removed when item is tombstoned', () => {
 
     await chrome.storage.local.set({ [PENDING_WRITE_KEY]: batch });
 
-    const removeSpy = vi.spyOn(chrome.storage.sync, 'remove');
-
     await flushPendingWrite();
 
-    // sync.remove should be called with the body key for the tombstoned item
-    const bodyKey = `${BODY_KEY_PREFIX}${uuid}:c0`;
-    expect(removeSpy).toHaveBeenCalledWith([bodyKey]);
+    expect(driveClient.flushToDrive).toHaveBeenCalledOnce();
+    expect(vi.mocked(driveClient.flushToDrive).mock.calls[0]![0]).toEqual(batch);
   });
 });

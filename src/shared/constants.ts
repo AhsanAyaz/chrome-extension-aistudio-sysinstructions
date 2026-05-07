@@ -44,3 +44,10 @@ export const PENDING_REMOTE_KEY = `${LOCAL_KEY_PREFIX}pendingRemote`;
 // Distinct from LAST_PUSHED_KEY, which is also written by the pull engine (D-04 loop guard).
 // diffAndAccumulate uses this key to determine which items this device has locally pushed.
 export const PUSH_BASELINE_KEY = 'sysins:local:pushBaseline';
+
+// Google Drive AppData sync backend (replaces chrome.storage.sync for cross-device sync).
+// Drive file: single JSON blob in the extension's private AppData folder.
+// Cache: Drive file content stored locally so getRegistry() + popup read don't hit Drive per-call.
+export const DRIVE_FILE_NAME = 'sysins-data.json';
+export const DRIVE_CACHE_KEY = `${LOCAL_KEY_PREFIX}driveCache`;
+export const META_LOCAL_KEY = `${LOCAL_KEY_PREFIX}meta`;

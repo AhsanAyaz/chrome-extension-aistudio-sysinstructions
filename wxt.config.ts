@@ -14,7 +14,11 @@ export default defineConfig({
     minimum_chrome_version: '116',
     permissions: ['storage', 'scripting', 'alarms', 'identity', 'identity.email'],
     action: {}, // required for chrome.action API (setBadgeText, setBadgeBackgroundColor) in service worker
-    host_permissions: ['https://aistudio.google.com/*'],
+    oauth2: {
+      client_id: '673314351848-atvo7sibd5ef405bktlcitidc36cc1g8.apps.googleusercontent.com',
+      scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+    },
+    host_permissions: ['https://aistudio.google.com/*', 'https://www.googleapis.com/*'],
     // No <all_urls>, no tabs, no notifications. identity + identity.email added in Phase 4 (D-03 / BOOT-03).
     web_accessible_resources: [
       {
