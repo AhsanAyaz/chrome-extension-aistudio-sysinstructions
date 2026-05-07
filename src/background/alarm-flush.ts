@@ -24,6 +24,7 @@ import {
 import type { SyncRegistry, LastPushedSnapshot, LastPushedEntry } from '../shared/types';
 import {
   LAST_PUSHED_KEY,
+  PUSH_BASELINE_KEY,
   writeSyncStatus,
   setErrorState,
 } from './sync-state';
@@ -98,7 +99,10 @@ async function writeLastPushed(batch: Record<string, unknown>): Promise<void> {
   for (const [uuid, entry] of entries) {
     snapshot[uuid] = entry;
   }
-  await chrome.storage.local.set({ [LAST_PUSHED_KEY]: snapshot });
+  await chrome.storage.local.set({
+    [LAST_PUSHED_KEY]: snapshot,
+    [PUSH_BASELINE_KEY]: snapshot,
+  });
 }
 
 /**
