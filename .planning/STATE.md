@@ -50,11 +50,12 @@ Known deferred items at close: 4 (see above)
 |---|-------------|------|--------|-----------|
 | 260506-r4d | Add README and CONTRIBUTING | 2026-05-06 | — | [260506-r4d-add-readme-contributing](.planning/quick/260506-r4d-add-readme-contributing/) |
 | 260507-b8k | Fix cross-device tombstone: separate push-baseline from pull-baseline | 2026-05-07 | a57125a | [260507-b8k-fix-cross-device-tombstone-separate-push](.planning/quick/260507-b8k-fix-cross-device-tombstone-separate-push/) |
+| 260507-qu8 | Document cross-device sync setup + log extension ID at SW startup | 2026-05-07 | — | [260507-qu8-research-and-fix-chrome-storage-sync-cro](.planning/quick/260507-qu8-research-and-fix-chrome-storage-sync-cro/) |
 
 ## Session Continuity
 
 Last session: 2026-05-07
-Last activity: 2026-05-07 - Completed quick task 260507-b8k: Fix cross-device tombstone: separate push-baseline from pull-baseline
+Last activity: 2026-05-07 - Completed quick task 260507-qu8: Document cross-device sync setup, log extension ID at startup
 Milestone archived: v1.0 MVP
 Tag: v1.0
 Next: /gsd-new-milestone to plan v1.1

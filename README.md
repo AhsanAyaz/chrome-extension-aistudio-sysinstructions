@@ -43,6 +43,49 @@ Then in Chrome:
 
 The extension icon appears in your toolbar. Open AI Studio and your instructions will start syncing.
 
+## Cross-Device Sync Setup
+
+> **This step is required for sync to work.** Chrome scopes `chrome.storage.sync` by
+> extension ID. If two devices load the extension with different IDs, they will never
+> share data — even with the same Google account.
+
+This extension pins its ID using a manifest `key` field. The expected ID on every device is
+**`kacgdabapihhffejhjlmpmjnpchlknfe`**. Follow these steps on **every device**:
+
+### First-time setup (or after updating the key)
+
+1. Build: `npm run build`
+2. If the extension was previously sideloaded, **remove it completely** from `chrome://extensions`
+   (click the trash icon — do **not** just click the reload icon; reload keeps the old random ID).
+3. Click **Load unpacked** and select the `.output/chrome-mv3/` directory.
+4. In `chrome://extensions`, confirm the ID shown is `kacgdabapihhffejhjlmpmjnpchlknfe`.
+
+### Verify Chrome sync is configured
+
+5. Open `chrome://settings/syncSetup` on both devices.
+6. Confirm Chrome sync is **on** (not paused).
+7. Confirm the **Extensions** category is included in sync.
+
+### Confirm both devices share the same namespace
+
+Open the DevTools console on the service worker (`chrome://extensions` → the extension card → "Inspect" link) and run:
+
+```js
+chrome.runtime.id          // must print the same ID on both devices
+chrome.storage.sync.get(null, console.log)   // must show the same data after a push
+```
+
+The extension also logs its ID on every service-worker startup: look for `[sysins] extension ID:` in the console.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| IDs differ between devices | Remove + re-add the extension on the device with the wrong ID |
+| IDs match but data differs | Wait 30–60 s; use Push Now / Pull Now |
+| Pull Now sees nothing on the other device | Rebuild on the pushing device; verify same Google account |
+| Sync never arrives | Check `chrome://settings/syncSetup` — Extensions category must be checked |
+
 ## Dev Commands
 
 ```bash

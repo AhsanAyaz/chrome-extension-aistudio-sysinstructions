@@ -64,6 +64,7 @@ export function _resetForTesting(): void {
 }
 
 export default defineBackground(() => {
+  console.log('[sysins] extension ID:', chrome.runtime.id);
   chrome.runtime.onInstalled.addListener(async (details) => {
     await initializeMeta();
     await ensureInitialized();
