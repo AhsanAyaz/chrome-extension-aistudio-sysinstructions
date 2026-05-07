@@ -134,10 +134,17 @@ export async function diffAndAccumulate(payload: RawInstruction[]): Promise<void
   }
 
   // Tombstone items that disappeared from the payload.
-  // Only live items (deletedAt === null) absent from the new payload are tombstoned.
+  // Guard (D-18): only tombstone items this device locally knows about — either
+  // previously flushed (in lastPushed) or accumulated earlier in this burst
+  // (in pendingRegistry). Items that arrived via remote pull only (in sync registry
+  // but absent from both lastPushed and pendingRegistry) must not be tombstoned —
+  // doing so would wipe the other device's data on the next push cycle.
   let hasChanges = Object.keys(bodyWrites).length > 0;
   for (const [uuid, rec] of Object.entries(baseRegistry)) {
-    if (!seenUuids.has(uuid) && rec.deletedAt === null) {
+    const wasLocallyKnown =
+      lastPushed[uuid] !== undefined ||
+      (pendingRegistry !== null && uuid in pendingRegistry);
+    if (!seenUuids.has(uuid) && rec.deletedAt === null && wasLocallyKnown) {
       nextRegistry[uuid] = { ...rec, deletedAt: now };
       hasChanges = true;
     }
