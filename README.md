@@ -71,19 +71,19 @@ After any `build` or `dev` rebuild, go to `chrome://extensions` and click the re
 
 ### Component Layers
 
-![Component layers](public/images/component-layers.png)
+![Component layers](docs/images/component-layers.png)
 
 ### Push Flow (local edit → Drive)
 
-![Push flow](public/images/push-flow.png)
+![Push flow](docs/images/push-flow.png)
 
 ### Pull Flow (Drive → local tab)
 
-![Pull flow](public/images/pull-flow.png)
+![Pull flow](docs/images/pull-flow.png)
 
 ### Bootstrap Flow (first install on a device)
 
-![Bootstrap flow](public/images/bootstrap-flow.png)
+![Bootstrap flow](docs/images/bootstrap-flow.png)
 
 ### Storage Layout
 
