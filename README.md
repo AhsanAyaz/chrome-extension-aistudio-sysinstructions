@@ -1,31 +1,36 @@
-# AI Studio Sync
+# AI Studio Instructions Sync
 
-A Chrome extension that syncs your [Google AI Studio](https://aistudio.google.com) system instructions across every device where you're signed into Chrome — automatically, with no clicks.
+A Chrome extension that syncs your [Google AI Studio](https://aistudio.google.com) system instructions across every device where you're signed into Chrome — automatically, with no custom server.
 
-AI Studio stores your saved system instructions in `localStorage`, which is per-device and per-browser-profile only. This extension lifts that data into `chrome.storage.sync` so your entire library follows you everywhere your Google account goes.
+AI Studio stores saved system instructions in `localStorage`, which is per-device and per-browser-profile only. This extension lifts that data into your **Google Drive AppData folder** so your entire library follows you wherever your Google account goes.
 
 ## Why This Exists
 
-If you use AI Studio on multiple machines, you know the frustration: prompts you crafted on your work machine aren't available on your laptop, and vice versa. Chrome syncs bookmarks and passwords automatically — your system instructions should too.
+If you use AI Studio on multiple machines, you know the frustration: prompts you crafted on your laptop aren't on your desktop, and vice versa. Chrome sync handles bookmarks and passwords automatically — your system instructions should be no different.
 
-This extension makes that happen using the same Chrome sync infrastructure, with no custom server and no third-party services. Your data never leaves your own Google account.
+**Why Google Drive AppData instead of `chrome.storage.sync`?**
+
+`chrome.storage.sync` looks like the obvious choice but has a critical limitation: Chrome only syncs extension storage for extensions installed from the Chrome Web Store. Sideloaded (developer-mode) extensions get a random ID per device, so their sync namespaces never overlap — data siloes instead of syncing, even with the same Google account.
+
+Drive AppData is the extension's private storage folder in the user's own Google Drive. It is hidden from the Drive UI, works identically for sideloaded and Web Store installs, and your data never leaves your own Google account.
 
 ## Features
 
-- **Automatic bidirectional sync** — edits on any machine propagate everywhere within ~30 seconds
-- **Conflict-free merges** — per-instruction timestamps, last-write-wins, soft-delete tombstones
-- **First-install union merge** — installing on a new machine preserves instructions from both sides
-- **Account safety** — auto-sync pauses if your Chrome profile and AI Studio account don't match
-- **Toolbar popup** — sync status, instruction list, manual Push Now / Pull Now controls
+- **Automatic bidirectional sync** — edits propagate across devices within ~30 seconds
+- **Non-destructive merges** — per-instruction UUIDs, last-write-wins timestamps, soft-delete tombstones
+- **First-install union merge** — installing on a new machine merges both sides; nothing is lost
+- **Single OAuth consent** — uses your existing Chrome sign-in; one consent screen, then silent forever
+- **Toolbar popup** — sync status, instruction count, manual Push Now / Pull Now buttons
 - **JSON export / import** — full backup and restore from a single file
-- **Zero infra** — no backend, no telemetry, no third-party calls; Chrome sync is the only backend
+- **Zero infrastructure** — no backend server, no telemetry, no third-party calls; Drive is the only backend
 
 ## Prerequisites
 
-- Chrome (or any Chromium browser that uses a Google account for `chrome.storage.sync`)
+- Chrome 116+ (or any Chromium browser with `chrome.identity` support)
+- A Google account signed into Chrome
 - Node.js 18+ and npm (for building from source)
 
-## Install (Sideload)
+## Install
 
 ```bash
 git clone https://github.com/ahsan-ubitian/aistudio-instructions-sync.git
@@ -37,89 +42,190 @@ npm run build
 Then in Chrome:
 
 1. Open `chrome://extensions`
-2. Enable **Developer mode** (top right)
+2. Enable **Developer mode** (top-right toggle)
 3. Click **Load unpacked**
 4. Select the `.output/chrome-mv3/` directory
 
-The extension icon appears in your toolbar. Open AI Studio and your instructions will start syncing.
+Repeat on every device. The extension ID is pinned via a manifest `key` field so it is identical across devices.
 
-## Cross-Device Sync Setup
+## First Use
 
-> **This step is required for sync to work.** Chrome scopes `chrome.storage.sync` by
-> extension ID. If two devices load the extension with different IDs, they will never
-> share data — even with the same Google account.
+Open AI Studio on any device. The extension detects your existing instructions and uploads them to Drive (a one-time bootstrap). On your other devices, the next 30-second poll picks up those instructions and delivers them to the tab.
 
-This extension pins its ID using a manifest `key` field. The expected ID on every device is
-**`kacgdabapihhffejhjlmpmjnpchlknfe`**. Follow these steps on **every device**:
-
-### First-time setup (or after updating the key)
-
-1. Build: `npm run build`
-2. If the extension was previously sideloaded, **remove it completely** from `chrome://extensions`
-   (click the trash icon — do **not** just click the reload icon; reload keeps the old random ID).
-3. Click **Load unpacked** and select the `.output/chrome-mv3/` directory.
-4. In `chrome://extensions`, confirm the ID shown is `kacgdabapihhffejhjlmpmjnpchlknfe`.
-
-### Verify Chrome sync is configured
-
-5. Open `chrome://settings/syncSetup` on both devices.
-6. Confirm Chrome sync is **on** (not paused).
-7. Confirm the **Extensions** category is included in sync.
-
-### Confirm both devices share the same namespace
-
-Open the DevTools console on the service worker (`chrome://extensions` → the extension card → "Inspect" link) and run:
-
-```js
-chrome.runtime.id          // must print the same ID on both devices
-chrome.storage.sync.get(null, console.log)   // must show the same data after a push
-```
-
-The extension also logs its ID on every service-worker startup: look for `[sysins] extension ID:` in the console.
-
-### Troubleshooting
-
-| Symptom | Fix |
-|---------|-----|
-| IDs differ between devices | Remove + re-add the extension on the device with the wrong ID |
-| IDs match but data differs | Wait 30–60 s; use Push Now / Pull Now |
-| Pull Now sees nothing on the other device | Rebuild on the pushing device; verify same Google account |
-| Sync never arrives | Check `chrome://settings/syncSetup` — Extensions category must be checked |
+**The first Push Now or Pull Now triggers a Google OAuth consent screen.** This is the standard Google account authorization — you are granting the extension access only to its own private AppData folder. Background syncs after that are completely silent.
 
 ## Dev Commands
 
 ```bash
-npm run dev        # Start WXT in watch mode (auto-rebuilds)
+npm run dev        # WXT watch mode — auto-rebuilds on file save
 npm run build      # Production build → .output/chrome-mv3/
-npm run test       # Run Vitest unit tests (126 tests)
-npm run compile    # TypeScript type-check only
+npm run test       # Vitest unit tests
+npm run compile    # TypeScript type-check only (no emit)
 npm run lint       # ESLint
 npm run zip        # Build + zip for distribution
 ```
 
-After any `build` or `dev` rebuild, go to `chrome://extensions` and click the refresh icon on the extension card to reload it.
+After any `build` or `dev` rebuild, go to `chrome://extensions` and click the reload icon on the extension card to reload the service worker.
+
+## Architecture
+
+### Component Layers
+
+```mermaid
+graph TD
+    LS["AI Studio localStorage\n(aistudio_all_system_instructions)"]
+    OB["ls-observer.js\nMAIN world — patches Storage.prototype.setItem"]
+    CS["content/index.ts\nContent script — relay only"]
+    SW["background/\nService worker — owns all logic"]
+    PO["popup/\nSvelte UI — dumb view"]
+    DR["Google Drive AppData\nsysins-data.json"]
+    LC["chrome.storage.local\nDrive cache + sync state"]
+
+    LS -- "setItem fires patch" --> OB
+    OB -- "window.postMessage" --> CS
+    CS -- "chrome.runtime.sendMessage\nLS_CHANGED / LS_BOOTSTRAP" --> SW
+    SW -- "chrome.tabs.sendMessage\nAPPLY_REMOTE" --> CS
+    CS -- "dispatchEvent StorageEvent" --> LS
+    SW -- "REST API" --> DR
+    SW -- "read/write" --> LC
+    PO -- "chrome.storage.onChanged" --> LC
+    PO -- "chrome.runtime.sendMessage\nPUSH_NOW / PULL_NOW / IMPORT_ITEMS" --> SW
+```
+
+### Push Flow (local edit → Drive)
+
+```mermaid
+sequenceDiagram
+    participant AI as AI Studio tab
+    participant OB as ls-observer (MAIN)
+    participant CS as Content script
+    participant SW as Service worker
+    participant DR as Google Drive
+
+    AI->>OB: localStorage.setItem(...)
+    OB->>CS: window.postMessage(LS_CHANGED)
+    CS->>SW: chrome.runtime.sendMessage(LS_CHANGED, payload)
+    SW->>SW: diffAndAccumulate(payload)\nassign UUIDs, build pendingWrite
+    SW->>SW: scheduleFlush() — 30s debounce alarm
+    note over SW: ...alarm fires...
+    SW->>SW: drainPendingWrite()
+    SW->>DR: flushToDrive(batch)\nread-modify-write: merge on top of current Drive file
+    DR-->>SW: updated modifiedTime
+    SW->>SW: writeLastPushed(snapshot)\nclearPendingWrite()\nstatus → idle
+```
+
+### Pull Flow (Drive → local tab)
+
+```mermaid
+sequenceDiagram
+    participant SW as Service worker
+    participant DR as Google Drive
+    participant LC as chrome.storage.local
+    participant CS as Content script
+    participant AI as AI Studio tab
+
+    note over SW: 30s alarm fires
+    SW->>DR: pollDriveForChanges()\nfetch file metadata
+    alt modifiedTime changed
+        DR-->>SW: full file content
+        SW->>SW: snapshot local cache\nmergeRemoteRegistry(local, remote)\npreserve local-only items + body chunks
+        SW->>LC: writeDriveCache(mergedCache)
+        SW->>SW: reconstructInstructions()
+        SW->>CS: chrome.tabs.sendMessage(APPLY_REMOTE, payload)
+        CS->>AI: dispatchEvent(StorageEvent)\nlocalStorage updated
+    else no change
+        DR-->>SW: null — no-op
+    end
+```
+
+### Bootstrap Flow (first install on a device)
+
+```mermaid
+sequenceDiagram
+    participant CS as Content script
+    participant SW as Service worker
+    participant DR as Google Drive
+    participant AI as AI Studio tab
+
+    note over CS: page load, BOOTSTRAP_NEEDED_KEY present
+    CS->>SW: LS_BOOTSTRAP(rawInstructions[])
+    SW->>DR: pollDriveForChanges(interactive=true)\nprime local cache with latest Drive state
+    DR-->>SW: current Drive data (or null if first device)
+    SW->>SW: getRegistry() → remoteRegistry\nassign UUIDs to local-only items\nmergeRegistries(local, remote)\nunion merge — nothing is lost
+    SW->>DR: flushToDrive(mergedBatch)\nread-modify-write
+    DR-->>SW: updated file
+    SW->>SW: reconstructInstructions()
+    SW->>CS: APPLY_REMOTE(mergedPayload)
+    CS->>AI: localStorage updated with merged set
+    SW->>SW: remove BOOTSTRAP_NEEDED_KEY
+```
+
+### Storage Layout
+
+**Google Drive AppData** — single file: `sysins-data.json`
+
+```json
+{
+  "schemaVersion": 1,
+  "data": {
+    "sysins:registry": {
+      "<uuid>": { "title": "...", "updatedAt": 1234567890, "deletedAt": null, "chunks": 1 }
+    },
+    "sysins:body:<uuid>:c0": "{\"text\":\"instruction text here\"}",
+    "sysins:body:<uuid>:c1": "...continuation chunk if text > 7 KB..."
+  }
+}
+```
+
+**`chrome.storage.local`** — runtime state, never leaves the device:
+
+| Key | Contents |
+|-----|----------|
+| `sysins:local:driveCache` | Mirror of Drive file (`fileId`, `modifiedTime`, `data`) |
+| `sysins:local:meta` | `{ schemaVersion, lastPushAt, lastPullAt }` |
+| `sysins:local:pendingWrite` | Batch waiting for next alarm flush |
+| `sysins:local:lastPushed` | Hash snapshot for change detection (loop guard) |
+| `sysins:local:pushBaseline` | Tombstone eligibility baseline |
+| `sysins:local:syncStatus` | `{ state, lastSyncAt, errorState }` — drives popup badge |
+| `sysins:local:bootstrapNeeded` | Flag written on install; cleared after bootstrap |
+| `sysins:local:pendingRemote` | Queued APPLY_REMOTE payload for when no tab is open |
+
+### Key Design Decisions
+
+**UUID-based identity, not title-based.** Once an instruction is created it gets a UUID. Renames bump `updatedAt` on the existing entry — they do not create a new item. Title matching is used only during bootstrap to reunite pre-UUID local items with their remote counterparts.
+
+**Tombstone-priority merge.** A deleted item (`deletedAt` set) wins over a live item when `deletedAt > updatedAt` on the winning side. This prevents a stale live copy on one device from silently resurrecting a delete made on another.
+
+**Single batched Drive write per flush cycle.** All pending changes accumulate in `pendingWrite` in local storage and are written to Drive in one read-modify-write per alarm tick. The batch survives service worker kills — it lives in local storage, not in-memory.
+
+**Read-modify-write on every Drive write.** `flushToDrive()` reads the current Drive file, merges the pending batch on top, removes stale body chunks for tombstoned or shrunk items, then writes. This ensures remote edits from other devices are never silently overwritten.
+
+**Merge before write on bootstrap.** `handleLsBootstrap()` polls Drive before reading the local registry. This ensures a fresh device with an empty local cache fetches the current Drive state before writing, preventing bootstrap from overwriting instructions already there from other devices.
+
+**Merge on pull, not replace.** `pollAndPull()` snapshots the local cache before downloading Drive data, then merges the remote registry into the local one. Local-only items (bootstrapped but not yet flushed to Drive) are preserved instead of being clobbered.
 
 ## Project Structure
 
 ```
 src/
-├── background/           # Service worker — owns ALL sync logic
-│   ├── index.ts          # SW entrypoint, message router, alarm/event wiring
-│   ├── push-engine.ts    # Diff, UUID assignment, pendingWrite accumulation
-│   ├── alarm-flush.ts    # 30s debounced batched chrome.storage.sync.set()
-│   ├── pull-engine.ts    # handleRemoteChanged, deliverToTab
-│   ├── bootstrap.ts      # First-install union merge, title-match UUID assignment
-│   ├── account-preflight.ts  # Chrome identity vs AI Studio DOM mismatch check
-│   ├── registry.ts       # UUID identity, updatedAt, tombstone semantics
-│   ├── storage-layout.ts # Chunking / reassembly for instructions > 7KB
-│   ├── meta-bootstrap.ts # sysins:meta write-if-absent on onInstalled
-│   └── sync-state.ts     # chrome.storage.local resume schema
+├── background/
+│   ├── index.ts              # SW entrypoint: message router, alarm/event wiring
+│   ├── drive-client.ts       # Drive REST API: auth, read, write, poll, flush
+│   ├── push-engine.ts        # diffAndAccumulate, UUID assignment, pendingWrite
+│   ├── alarm-flush.ts        # Debounced flush: drains pendingWrite → flushToDrive
+│   ├── pull-engine.ts        # pollAndPull: Drive poll → merge → APPLY_REMOTE
+│   ├── bootstrap.ts          # First-install union merge, title-match UUID reuse
+│   ├── registry.ts           # CRUD helpers, mergeRemoteRegistry, reconstructInstructions
+│   ├── storage-layout.ts     # Chunk/unchunk for instructions > 7 KB
+│   ├── account-preflight.ts  # Chrome identity vs AI Studio account mismatch check
+│   ├── meta-bootstrap.ts     # sysins:local:meta write-if-absent on install
+│   └── sync-state.ts         # chrome.storage.local helpers, error state, sync status
 ├── content/
-│   └── index.ts          # Content script — relay only; no business logic
+│   └── index.ts              # Content script — relay only; no business logic here
 ├── injected/
-│   └── ls-observer.js    # MAIN-world Storage.prototype.setItem patch
+│   └── ls-observer.js        # MAIN-world Storage.prototype.setItem patch
 ├── popup/
-│   ├── App.svelte        # Root component, state, export/import
+│   ├── App.svelte            # Root: state management, export/import logic
 │   ├── StatusHeader.svelte
 │   ├── InstructionList.svelte
 │   ├── ActionRow.svelte
@@ -128,32 +234,32 @@ src/
 │   ├── relativeTime.ts
 │   ├── popup.css
 │   └── index.html
-├── shared/
-│   ├── constants.ts      # All sysins:* key constants
-│   ├── types.ts          # SyncRegistry, RegistryRecord, SyncStatus, ErrorState…
-│   └── meta-guard.ts     # Runtime guard for sysins:meta reads
-public/
-└── injected/
-    └── ls-observer.js    # Static copy (WXT copies plain .js from public/, not src/)
+└── shared/
+    ├── constants.ts          # All sysins:* key constants — single source of truth
+    ├── types.ts              # SyncRegistry, DriveCache, SyncStatus, ErrorState…
+    └── meta-guard.ts         # Runtime schema version guard
 ```
 
-## Storage Layout
+## Known Issues
 
-All data lives under the `sysins:*` namespace in `chrome.storage.sync`:
+**~30 second sync delay.** Drive AppData has no push notifications or webhooks. Each device polls Drive every 30 seconds. An edit on device A shows up on device B within about 30–60 seconds depending on alarm timing.
 
-| Key | Contents |
-|-----|----------|
-| `sysins:meta` | `{ schemaVersion: 1, lastPushAt, lastPullAt }` |
-| `sysins:registry` | `{ [uuid]: { title, updatedAt, deletedAt, chunks } }` |
-| `sysins:body:<uuid>:c0` | Instruction text chunk 0 (≤ 7KB each) |
-| `sysins:body:<uuid>:c1` | Instruction text chunk 1 (if needed) |
+**"Refresh AI Studio" hint after pull.** AI Studio reads `localStorage` on page load. When the extension delivers new instructions via `StorageEvent`, the tab picks them up internally — but the UI may not re-render the full list without a page refresh. The popup shows a hint after Pull Now. This is a known limitation of the `StorageEvent` delivery path.
 
-Local state lives in `chrome.storage.local` under `sysins:local:*` (last-pushed snapshot, pending writes, sync status, bootstrap flags).
+**OAuth token expiry during background poll.** Background alarm polls use `interactive: false`. If the OAuth token expires and no user is interacting with the popup, the poll silently skips until the next user-triggered Push/Pull (`interactive: true`) re-authorizes.
+
+**No conflict resolution UI.** Two devices editing the same instruction simultaneously produces a last-write-wins outcome. The losing edit is gone with no notification. Acceptable for a personal single-user tool but worth knowing.
+
+**Manual extension reload required after rebuild.** After `npm run build` or `npm run dev` rebuilds, click the reload icon on the extension card in `chrome://extensions`. Sideloaded extensions are not hot-reloaded automatically.
+
+**First sync requires one manual Push/Pull.** The 30-second background alarm does not prompt for OAuth. After a fresh install, click Push Now or Pull Now once to trigger the consent screen and prime the Drive file. Background sync is automatic after that.
 
 ## Privacy
 
-- All instruction data stays inside your own Google Chrome sync
-- Zero third-party network calls (enforced by a static code scan in the test suite)
+- All instruction data is stored exclusively in your own Google Drive AppData folder
+- The folder is private and invisible in the Drive UI
+- The extension requests only the `drive.appdata` scope — no access to your other files
+- Zero third-party network calls (enforced by a static code scan in the test suite — `dist-04.test.ts`)
 - No analytics, no telemetry, no crash reporting
 
 ## Contributing
