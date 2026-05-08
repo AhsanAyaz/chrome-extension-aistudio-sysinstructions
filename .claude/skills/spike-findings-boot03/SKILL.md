@@ -9,11 +9,11 @@ Permission required: BOTH `"identity"` AND `"identity.email"` (not just `"identi
 
 - `"identity.email"` alone → `chrome.identity` is `undefined` (namespace not exposed)
 - `"identity"` alone → `chrome.identity` is defined but returns `{ email: '', id: '' }` (empty email)
-- `"identity"` + `"identity.email"` together → returns `{ email: 'Ahsan.ubitian@gmail.com', id: '108678739228443489784' }`
+- `"identity"` + `"identity.email"` together → returns `{ email: 'you@gmail.com', id: '<numeric-gaia-id>' }`
 
 Test result: `chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' })` returned:
-  email: Ahsan.ubitian@gmail.com
-  id: 108678739228443489784
+  email: you@gmail.com
+  id: <numeric-gaia-id>
 
 Decision (D-03): Both `"identity"` AND `"identity.email"` permissions MUST be added to wxt.config.ts in plan 04-05.
 
@@ -21,7 +21,7 @@ Decision (D-03): Both `"identity"` AND `"identity.email"` permissions MUST be ad
 
 Confirmed selector: `document.querySelector('[aria-label*="Google Account"]')`
 Confirmed attribute: `aria-label`
-Raw attribute value: `"Google Account: Muhammad Ahsan Ayaz (Ahsan.ubitian@gmail.com)"`
+Raw attribute value: `"Google Account: Your Name (you@gmail.com)"`
 Email extraction: match `/\(([^)]+)\)$/` — the email is in the last parenthesised group
 
 Fallback selectors tried:
