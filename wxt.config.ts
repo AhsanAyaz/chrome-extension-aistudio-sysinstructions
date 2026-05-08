@@ -6,8 +6,10 @@ export default defineConfig({
   modules: ['@wxt-dev/module-svelte'],  // Phase 5 addition (D-11)
   manifest: {
     // Pinned RSA public key — fixes extension ID across all sideloaded installs.
-    // Without this, each device gets a random ID and chrome.storage.sync namespaces never overlap.
-    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0YaECQY0yZNwfiXIjn+b02Ao/xvTqBY80wr6yzjra7ciPMjGL9wML6H1vmQUIJ/fQ3/MhzmWNWZJjWj/I+/wdrfdlztiFoFDhWVDB4T5f458XjirZUcoL5MzWFg9+qB8OPFhTM2EIDmC8DvniFR3uaGWRD4t/QXD72cG8K4fdIfkYiWc7f8/vSCGsz53rP0Trl+Boo8+GGgJAAMIMRq5pMFkf1C8GmIWwg+W+AztKZLnzoWlMjpKK44k92VxYlz9jiZWAY2YDVyB7B1LOoIbgNilEldy5cahUl6hhBgvAX5UiExz/mZm/4SlinDq+lEhFWhUWFJ7OLGwQqzAoJogpQIDAQAB',
+    // Omit for Web Store builds (Google assigns the ID); set SIDELOAD=1 to include it.
+    ...(process.env.SIDELOAD ? {
+      key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0YaECQY0yZNwfiXIjn+b02Ao/xvTqBY80wr6yzjra7ciPMjGL9wML6H1vmQUIJ/fQ3/MhzmWNWZJjWj/I+/wdrfdlztiFoFDhWVDB4T5f458XjirZUcoL5MzWFg9+qB8OPFhTM2EIDmC8DvniFR3uaGWRD4t/QXD72cG8K4fdIfkYiWc7f8/vSCGsz53rP0Trl+Boo8+GGgJAAMIMRq5pMFkf1C8GmIWwg+W+AztKZLnzoWlMjpKK44k92VxYlz9jiZWAY2YDVyB7B1LOoIbgNilEldy5cahUl6hhBgvAX5UiExz/mZm/4SlinDq+lEhFWhUWFJ7OLGwQqzAoJogpQIDAQAB',
+    } : {}),
     name: 'AI Studio Instructions Sync',
     description: 'Sync AI Studio system instructions across signed-in Chrome devices.',
     version: '0.1.0',
