@@ -211,6 +211,47 @@ describe('Case 6: tombstoned items excluded from payload', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Case 8: pull merges — local-only items survive a remote pull
+// ---------------------------------------------------------------------------
+describe('Case 8: local-only items preserved during pull (merge not replace)', () => {
+  it('includes local-only items in the delivered payload when remote lacks them', async () => {
+    const localOnlyUuid = 'uuid-local-only-000-0000-000000000001';
+    const remoteUuid = 'uuid-remote-only-00-0000-000000000001';
+
+    const localCache = makeDriveCache(
+      {
+        [localOnlyUuid]: { title: 'Local Only', updatedAt: 1000, deletedAt: null, chunks: 1 },
+      },
+      { [`sysins:body:${localOnlyUuid}:c0`]: JSON.stringify({ text: 'local body' }) },
+    );
+
+    const remoteCache = makeDriveCache(
+      {
+        [remoteUuid]: { title: 'Remote Only', updatedAt: 2000, deletedAt: null, chunks: 1 },
+      },
+      { [`sysins:body:${remoteUuid}:c0`]: JSON.stringify({ text: 'remote body' }) },
+    );
+
+    // readDriveCache returns local state (pre-poll), pollDriveForChanges returns remote
+    vi.mocked(driveClient.readDriveCache).mockResolvedValue(localCache);
+    vi.mocked(driveClient.pollDriveForChanges).mockResolvedValue(remoteCache);
+    // writeDriveCache captures the merged cache so reconstructInstructions sees it
+    vi.mocked(driveClient.writeDriveCache).mockImplementation(async (c) => {
+      vi.mocked(driveClient.readDriveCache).mockResolvedValue(c);
+    });
+
+    mockTabsQuery([{ id: 55, url: 'https://aistudio.google.com/' } as chrome.tabs.Tab]);
+    const sendSpy = vi.spyOn(chrome.tabs, 'sendMessage').mockResolvedValue(undefined);
+
+    await pollAndPull();
+
+    const payload = (sendSpy.mock.calls[0]![1] as { payload: RawInstruction[] }).payload;
+    expect(payload.some((i) => i.title === 'Local Only')).toBe(true);
+    expect(payload.some((i) => i.title === 'Remote Only')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Case 7: deliverToTab — standalone delivery helper
 // ---------------------------------------------------------------------------
 describe('Case 7: deliverToTab standalone', () => {

@@ -13,7 +13,7 @@ import { splitIntoChunks } from './storage-layout';
 import { deliverToTab } from './pull-engine';
 import { REGISTRY_KEY, BOOTSTRAP_NEEDED_KEY, BODY_KEY_PREFIX } from '../shared/constants';
 import type { SyncRegistry, RegistryRecord, RawInstruction } from '../shared/types';
-import { flushToDrive, readDriveCache, writeDriveCache } from './drive-client';
+import { flushToDrive, readDriveCache, writeDriveCache, pollDriveForChanges } from './drive-client';
 
 /**
  * Pure function: merge two SyncRegistry objects with last-write-wins + tombstone-wins.
@@ -58,6 +58,11 @@ function buildBodyWriteMap(uuid: string, chunkStrings: string[]): Record<string,
  */
 export async function handleLsBootstrap(payload: RawInstruction[]): Promise<void> {
   if (payload.length === 0) return;
+
+  // Prime local cache with Drive state before reading registry.
+  // Without this, a fresh device has an empty cache and flushToDrive would
+  // overwrite any items already in Drive from other devices.
+  await pollDriveForChanges(true).catch(() => {});
 
   const remoteRegistry = await getRegistry();
 

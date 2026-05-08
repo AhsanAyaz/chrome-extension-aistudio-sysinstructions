@@ -17,11 +17,11 @@ import type {
   LastPushedEntry,
   SyncRegistry,
 } from '../shared/types';
-import { PENDING_REMOTE_KEY, REGISTRY_KEY } from '../shared/constants';
-import { reconstructInstructions } from './registry';
+import { PENDING_REMOTE_KEY, REGISTRY_KEY, BODY_KEY_PREFIX } from '../shared/constants';
+import { reconstructInstructions, mergeRemoteRegistry } from './registry';
 import { LAST_PUSHED_KEY, writeSyncStatus } from './sync-state';
 import { shortHash } from './hash';
-import { pollDriveForChanges } from './drive-client';
+import { pollDriveForChanges, readDriveCache, writeDriveCache } from './drive-client';
 
 // ---------------------------------------------------------------------------
 // Exported API
@@ -35,10 +35,30 @@ import { pollDriveForChanges } from './drive-client';
  * 4. Deliver to active AI Studio tab (or queue in pendingRemote).
  */
 export async function pollAndPull(): Promise<void> {
+  // Snapshot local state before poll overwrites the cache
+  const prePollCache = await readDriveCache();
+
   const newCache = await pollDriveForChanges(false);
   if (newCache === null) return; // no change or network error
 
-  const remoteRegistry = (newCache.data[REGISTRY_KEY] as SyncRegistry | undefined) ?? {};
+  // Merge remote registry into local — preserves items that exist locally but
+  // aren't in Drive yet (e.g. bootstrapped on this device, alarm flush pending).
+  const localReg = (prePollCache?.data[REGISTRY_KEY] as SyncRegistry | undefined) ?? {};
+  const remoteReg = (newCache.data[REGISTRY_KEY] as SyncRegistry | undefined) ?? {};
+  const { merged: mergedReg, changed } = mergeRemoteRegistry(localReg, remoteReg);
+
+  if (changed || Object.keys(localReg).length > 0) {
+    // Preserve local body chunks for items not present in remote data
+    const mergedData: Record<string, unknown> = { ...newCache.data, [REGISTRY_KEY]: mergedReg };
+    for (const [key, val] of Object.entries(prePollCache?.data ?? {})) {
+      if (key.startsWith(BODY_KEY_PREFIX) && !(key in mergedData)) {
+        mergedData[key] = val;
+      }
+    }
+    await writeDriveCache({ ...newCache, data: mergedData });
+  }
+
+  const remoteRegistry = remoteReg;
   const itemCount = Object.values(remoteRegistry).filter((r) => r.deletedAt === null).length;
 
   const merged = await reconstructInstructions();
