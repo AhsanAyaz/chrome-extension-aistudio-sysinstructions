@@ -1,7 +1,13 @@
 {
   "name": "aistudio-instructions-sync",
-  "private": true,
   "version": "0.1.0",
+  "description": "Sync your Google AI Studio system instructions across devices via Google Drive AppData",
+  "author": "Muhammad Ahsan Ayaz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AhsanAyaz/aistudio-instructions-sync.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "wxt",

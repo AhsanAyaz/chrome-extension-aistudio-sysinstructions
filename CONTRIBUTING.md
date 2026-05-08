@@ -53,7 +53,7 @@ These rules enforce storage and sync correctness. Violating them causes subtle d
 ## Dev Setup
 
 ```bash
-git clone https://github.com/ahsan-ubitian/aistudio-instructions-sync.git
+git clone https://github.com/AhsanAyaz/aistudio-instructions-sync.git
 cd aistudio-instructions-sync
 npm install
 npm run build

@@ -33,7 +33,7 @@ Drive AppData is the extension's private storage folder in the user's own Google
 ## Install
 
 ```bash
-git clone https://github.com/ahsan-ubitian/aistudio-instructions-sync.git
+git clone https://github.com/AhsanAyaz/aistudio-instructions-sync.git
 cd aistudio-instructions-sync
 npm install
 npm run build
@@ -193,4 +193,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
-Personal use. Not yet published to the Chrome Web Store.
+MIT — see [LICENSE](./LICENSE).
+
+## Privacy Policy
+
+See [PRIVACY.md](./PRIVACY.md).
