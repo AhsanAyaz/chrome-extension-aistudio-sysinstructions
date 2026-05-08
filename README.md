@@ -1,5 +1,7 @@
 # AI Studio Instructions Sync
 
+![AI Studio Instructions Sync](public/images/screenshots/Marquee.jpg)
+
 A Chrome extension that syncs your [Google AI Studio](https://aistudio.google.com) system instructions across every device where you're signed into Chrome — automatically, with no custom server.
 
 AI Studio stores saved system instructions in `localStorage`, which is per-device and per-browser-profile only. This extension lifts that data into your **Google Drive AppData folder** so your entire library follows you wherever your Google account goes.
