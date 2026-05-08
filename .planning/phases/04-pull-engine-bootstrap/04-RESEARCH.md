@@ -645,22 +645,25 @@ it('handleRemoteChanged applies remote registry and calls reconstructInstruction
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **BOOT-03 spike: `identity.email` permission + AI Studio DOM identifier**
    - What we know: `identity.email` permission is required (confirmed). DOM identifier unknown.
    - What's unclear: Exact CSS selector and attribute for AI Studio's signed-in account email.
    - Recommendation: Spike is Plan 04-01. No other Phase 4 code until resolved.
+   - **RESOLVED:** `identity.email` permission is required (D-03 confirmed). DOM selector for AI Studio account is confirmed by spike Plan 04-01 and written to `.claude/skills/spike-findings-boot03/SKILL.md`.
 
 2. **Should pull engine update `lastPushed` after APPLY_REMOTE delivery?**
    - What we know: D-04 relies on diff-against-lastPushed to prevent infinite loop. If `lastPushed` is stale post-pull, `diffAndAccumulate` may see all pulled items as "changed" and schedule a redundant flush.
    - What's unclear: Whether this edge case manifests in practice or whether the alarm-flush diff eliminates it.
    - Recommendation: Planner should include `writeLastPushed` call in the pull path to be explicit. Cheaper than debugging a spurious flush.
+   - **RESOLVED:** pull-engine.ts calls `writeLastPushed` (via `chrome.storage.local.set({ [LAST_PUSHED_KEY]: snapshot })`) after APPLY_REMOTE delivery — implemented in Plan 04-03.
 
 3. **Tombstone GC: Phase 4 or v1.x?**
    - What we know: `TOMBSTONE_GC_TTL_MS = 30 * 24 * 60 * 60 * 1000` is already in `constants.ts`. Schema supports it. The constant suggests Phase 1 anticipated GC.
    - What's unclear: Whether Phase 4's pull path is the natural place to trigger GC (after a successful merge).
    - Recommendation: Planner decides. GC is a single `chrome.storage.sync.remove()` call on tombstones older than TTL; it fits naturally after the pull merge. Including it in Phase 4 keeps the constant used and prevents deferred-forever syndrome.
+   - **RESOLVED:** Deferred to v1.x per CONTEXT.md Deferred section. `TOMBSTONE_GC_TTL_MS` constant already exists in `constants.ts` as a placeholder for when GC is implemented.
 
 ---
 

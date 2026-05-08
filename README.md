@@ -71,94 +71,19 @@ After any `build` or `dev` rebuild, go to `chrome://extensions` and click the re
 
 ### Component Layers
 
-```mermaid
-graph TD
-    LS["AI Studio localStorage\n(aistudio_all_system_instructions)"]
-    OB["ls-observer.js\nMAIN world — patches Storage.prototype.setItem"]
-    CS["content/index.ts\nContent script — relay only"]
-    SW["background/\nService worker — owns all logic"]
-    PO["popup/\nSvelte UI — dumb view"]
-    DR["Google Drive AppData\nsysins-data.json"]
-    LC["chrome.storage.local\nDrive cache + sync state"]
-
-    LS -- "setItem fires patch" --> OB
-    OB -- "window.postMessage" --> CS
-    CS -- "chrome.runtime.sendMessage\nLS_CHANGED / LS_BOOTSTRAP" --> SW
-    SW -- "chrome.tabs.sendMessage\nAPPLY_REMOTE" --> CS
-    CS -- "dispatchEvent StorageEvent" --> LS
-    SW -- "REST API" --> DR
-    SW -- "read/write" --> LC
-    PO -- "chrome.storage.onChanged" --> LC
-    PO -- "chrome.runtime.sendMessage\nPUSH_NOW / PULL_NOW / IMPORT_ITEMS" --> SW
-```
+![Component layers](public/images/component-layers.png)
 
 ### Push Flow (local edit → Drive)
 
-```mermaid
-sequenceDiagram
-    participant AI as AI Studio tab
-    participant OB as ls-observer (MAIN)
-    participant CS as Content script
-    participant SW as Service worker
-    participant DR as Google Drive
-
-    AI->>OB: localStorage.setItem(...)
-    OB->>CS: window.postMessage(LS_CHANGED)
-    CS->>SW: chrome.runtime.sendMessage(LS_CHANGED, payload)
-    SW->>SW: diffAndAccumulate(payload)\nassign UUIDs, build pendingWrite
-    SW->>SW: scheduleFlush() — 30s debounce alarm
-    note over SW: ...alarm fires...
-    SW->>SW: drainPendingWrite()
-    SW->>DR: flushToDrive(batch)\nread-modify-write: merge on top of current Drive file
-    DR-->>SW: updated modifiedTime
-    SW->>SW: writeLastPushed(snapshot)\nclearPendingWrite()\nstatus → idle
-```
+![Push flow](public/images/push-flow.png)
 
 ### Pull Flow (Drive → local tab)
 
-```mermaid
-sequenceDiagram
-    participant SW as Service worker
-    participant DR as Google Drive
-    participant LC as chrome.storage.local
-    participant CS as Content script
-    participant AI as AI Studio tab
-
-    note over SW: 30s alarm fires
-    SW->>DR: pollDriveForChanges()\nfetch file metadata
-    alt modifiedTime changed
-        DR-->>SW: full file content
-        SW->>SW: snapshot local cache\nmergeRemoteRegistry(local, remote)\npreserve local-only items + body chunks
-        SW->>LC: writeDriveCache(mergedCache)
-        SW->>SW: reconstructInstructions()
-        SW->>CS: chrome.tabs.sendMessage(APPLY_REMOTE, payload)
-        CS->>AI: dispatchEvent(StorageEvent)\nlocalStorage updated
-    else no change
-        DR-->>SW: null — no-op
-    end
-```
+![Pull flow](public/images/pull-flow.png)
 
 ### Bootstrap Flow (first install on a device)
 
-```mermaid
-sequenceDiagram
-    participant CS as Content script
-    participant SW as Service worker
-    participant DR as Google Drive
-    participant AI as AI Studio tab
-
-    note over CS: page load, BOOTSTRAP_NEEDED_KEY present
-    CS->>SW: LS_BOOTSTRAP(rawInstructions[])
-    SW->>DR: pollDriveForChanges(interactive=true)\nprime local cache with latest Drive state
-    DR-->>SW: current Drive data (or null if first device)
-    SW->>SW: getRegistry() → remoteRegistry\nassign UUIDs to local-only items\nmergeRegistries(local, remote)\nunion merge — nothing is lost
-    SW->>DR: flushToDrive(mergedBatch)\nread-modify-write
-    DR-->>SW: updated file
-    SW->>SW: reconstructInstructions()
-    SW->>CS: APPLY_REMOTE(mergedPayload)
-    CS->>AI: localStorage updated with merged set
-    SW->>SW: remove BOOTSTRAP_NEEDED_KEY
-```
+![Bootstrap flow](public/images/bootstrap-flow.png)
 
 ### Storage Layout
 
